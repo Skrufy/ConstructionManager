@@ -1,0 +1,126 @@
+# Daily Log Queries for iOS
+
+query GetDailyLogs($projectId: ID, $status: DailyLogStatus, $startDate: Date, $endDate: Date, $page: Int, $pageSize: Int) {
+  dailyLogs(projectId: $projectId, status: $status, startDate: $startDate, endDate: $endDate, page: $page, pageSize: $pageSize) {
+    edges {
+      node {
+        id
+        date
+        status
+        notes
+        weatherDelay
+        project {
+          id
+          name
+        }
+        submitter {
+          id
+          name
+        }
+        photoCount
+        crewCount
+        entriesCount
+        totalLaborHours
+        createdAt
+        updatedAt
+      }
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    totalCount
+  }
+}
+
+query GetDailyLog($id: ID!) {
+  dailyLog(id: $id) {
+    id
+    date
+    status
+    notes
+    weatherDelay
+    weatherDelayNotes
+    gpsLatitude
+    gpsLongitude
+    weatherData
+    project {
+      id
+      name
+      address {
+        formatted
+      }
+    }
+    submitter {
+      id
+      name
+      email
+    }
+    approver {
+      id
+      name
+    }
+    photos {
+      id
+      url
+      caption
+      gpsLatitude
+      gpsLongitude
+      createdAt
+    }
+    entries {
+      id
+      activityLabel {
+        id
+        name
+      }
+      locationLabels {
+        id
+        name
+      }
+      statusLabel {
+        id
+        name
+      }
+      percentComplete
+      notes
+    }
+    crewMembers {
+      id
+      name
+      hours
+      trade
+    }
+    equipmentUsage {
+      id
+      equipment {
+        id
+        name
+      }
+      hours
+    }
+    materials {
+      id
+      name
+      quantity
+      unit
+      notes
+    }
+    issues {
+      id
+      description
+      severity
+      resolved
+    }
+    photoCount
+    crewCount
+    entriesCount
+    totalLaborHours
+    createdAt
+    updatedAt
+    submittedAt
+    approvedAt
+  }
+}

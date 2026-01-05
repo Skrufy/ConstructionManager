@@ -1,0 +1,32 @@
+# Time Tracking Mutations for iOS
+
+mutation ClockIn($input: ClockInInput!) {
+  clockIn(input: $input) {
+    id
+    clockIn
+    status
+    gpsInLatitude
+    gpsInLongitude
+    notes
+    project {
+      id
+      name
+    }
+    createdAt
+  }
+}
+
+mutation ClockOut($id: ID!, $input: ClockOutInput!) {
+  clockOut(id: $id, input: $input) {
+    id
+    clockIn
+    clockOut
+    breakMinutes
+    status
+    totalHours
+    gpsOutLatitude
+    gpsOutLongitude
+    notes
+    updatedAt
+  }
+}

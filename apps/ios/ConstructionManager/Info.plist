@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Local Network Permission (for accessing dev server from device) -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>This app needs local network access to connect to the development server for testing.</string>
+
+    <!-- Bonjour services for local network discovery -->
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_http._tcp</string>
+    </array>
+
+    <!-- Allow HTTP for local development -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+        <!-- Exception for local IP addresses -->
+        <key>NSExceptionDomains</key>
+        <dict>
+            <key>192.168.117.211</key>
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+            </dict>
+            <key>localhost</key>
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+            </dict>
+        </dict>
+    </dict>
+
+    <!-- Camera for taking photos of issues/documents -->
+    <key>NSCameraUsageDescription</key>
+    <string>This app needs camera access to capture photos of construction issues and documents.</string>
+
+    <!-- Photo Library for selecting images -->
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>This app needs photo library access to select images for issues and documents.</string>
+
+    <!-- Face ID for biometric login -->
+    <key>NSFaceIDUsageDescription</key>
+    <string>This app uses Face ID for secure authentication.</string>
+
+    <!-- Location for GPS coordinates and address detection -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>This app needs location access to automatically detect your current location for daily logs, time tracking, and safety meetings.</string>
+
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>This app needs location access to track GPS coordinates for time entries and verify job site presence.</string>
+
+    <!-- URL Schemes for deep linking -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>com.duggin.construction</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>duggin</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

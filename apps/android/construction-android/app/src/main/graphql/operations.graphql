@@ -1,0 +1,507 @@
+# ConstructionPro Android GraphQL Operations
+# These operations are used by Apollo Android to generate type-safe Kotlin code
+
+# =============================================================================
+# QUERIES
+# =============================================================================
+
+query GetMe {
+  me {
+    id
+    email
+    name
+    phone
+    role
+    language
+    status
+    avatarUrl
+    createdAt
+  }
+}
+
+query GetMyPermissions {
+  myPermissions {
+    userId
+    role
+    companyPermissions {
+      tool
+      level
+    }
+    projectPermissions {
+      projectId
+      permissions {
+        tool
+        level
+      }
+    }
+  }
+}
+
+query GetProjects($status: ProjectStatus, $search: String, $page: Int, $pageSize: Int) {
+  projects(status: $status, search: $search, page: $page, pageSize: $pageSize) {
+    edges {
+      node {
+        id
+        name
+        description
+        status
+        startDate
+        endDate
+        address {
+          street
+          city
+          state
+          zipCode
+          formatted
+          latitude
+          longitude
+        }
+        dailyLogCount
+        documentCount
+        openIncidentCount
+        createdAt
+        updatedAt
+      }
+      cursor
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    totalCount
+  }
+}
+
+query GetProject($id: ID!) {
+  project(id: $id) {
+    id
+    name
+    description
+    status
+    startDate
+    endDate
+    address {
+      street
+      city
+      state
+      zipCode
+      country
+      formatted
+      latitude
+      longitude
+    }
+    client {
+      id
+      companyName
+      contactName
+      email
+      phone
+    }
+    team {
+      id
+      name
+      email
+      role
+      avatarUrl
+    }
+    dailyLogCount
+    documentCount
+    openIncidentCount
+    createdAt
+    updatedAt
+  }
+}
+
+query GetDailyLogs(
+  $projectId: ID
+  $status: DailyLogStatus
+  $startDate: Date
+  $endDate: Date
+  $page: Int
+  $pageSize: Int
+) {
+  dailyLogs(
+    projectId: $projectId
+    status: $status
+    startDate: $startDate
+    endDate: $endDate
+    page: $page
+    pageSize: $pageSize
+  ) {
+    edges {
+      node {
+        id
+        date
+        status
+        notes
+        weatherDelay
+        weatherDelayNotes
+        gpsLatitude
+        gpsLongitude
+        project {
+          id
+          name
+        }
+        submitter {
+          id
+          name
+        }
+        photoCount
+        crewCount
+        entriesCount
+        totalLaborHours
+        createdAt
+        updatedAt
+        submittedAt
+        approvedAt
+      }
+      cursor
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    totalCount
+  }
+}
+
+query GetDailyLog($id: ID!) {
+  dailyLog(id: $id) {
+    id
+    date
+    status
+    notes
+    weatherDelay
+    weatherDelayNotes
+    gpsLatitude
+    gpsLongitude
+    weatherData
+    project {
+      id
+      name
+      address {
+        formatted
+      }
+    }
+    submitter {
+      id
+      name
+      email
+    }
+    approver {
+      id
+      name
+    }
+    photos {
+      id
+      url
+      caption
+      gpsLatitude
+      gpsLongitude
+      takenAt
+      createdAt
+    }
+    entries {
+      id
+      activityLabel {
+        id
+        name
+        category
+      }
+      locationLabels {
+        id
+        name
+        category
+      }
+      statusLabel {
+        id
+        name
+        category
+      }
+      percentComplete
+      notes
+    }
+    crewMembers {
+      id
+      name
+      hours
+      trade
+    }
+    materials {
+      id
+      name
+      quantity
+      unit
+      notes
+    }
+    issues {
+      id
+      description
+      severity
+      resolved
+    }
+    photoCount
+    crewCount
+    entriesCount
+    totalLaborHours
+    createdAt
+    updatedAt
+    submittedAt
+    approvedAt
+  }
+}
+
+query GetActiveTimeEntry {
+  activeTimeEntry {
+    id
+    clockIn
+    clockOut
+    breakMinutes
+    status
+    notes
+    gpsInLatitude
+    gpsInLongitude
+    user {
+      id
+      name
+    }
+    project {
+      id
+      name
+    }
+    totalHours
+    createdAt
+  }
+}
+
+query GetTimeEntries(
+  $projectId: ID
+  $userId: ID
+  $startDate: Date
+  $endDate: Date
+  $status: TimeEntryStatus
+  $page: Int
+  $pageSize: Int
+) {
+  timeEntries(
+    projectId: $projectId
+    userId: $userId
+    startDate: $startDate
+    endDate: $endDate
+    status: $status
+    page: $page
+    pageSize: $pageSize
+  ) {
+    edges {
+      node {
+        id
+        clockIn
+        clockOut
+        breakMinutes
+        status
+        notes
+        gpsInLatitude
+        gpsInLongitude
+        gpsOutLatitude
+        gpsOutLongitude
+        user {
+          id
+          name
+        }
+        project {
+          id
+          name
+        }
+        totalHours
+        createdAt
+        updatedAt
+      }
+      cursor
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+    }
+    totalCount
+  }
+}
+
+query GetEquipment(
+  $projectId: ID
+  $status: EquipmentStatus
+  $search: String
+  $page: Int
+  $pageSize: Int
+) {
+  equipment(
+    projectId: $projectId
+    status: $status
+    search: $search
+    page: $page
+    pageSize: $pageSize
+  ) {
+    edges {
+      node {
+        id
+        name
+        type
+        status
+        samsaraId
+        currentLat
+        currentLng
+        lastUpdated
+        currentProject {
+          id
+          name
+        }
+        createdAt
+        updatedAt
+      }
+      cursor
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+    }
+    totalCount
+  }
+}
+
+# =============================================================================
+# MUTATIONS
+# =============================================================================
+
+mutation CreateDailyLog($input: CreateDailyLogInput!) {
+  createDailyLog(input: $input) {
+    id
+    date
+    status
+    notes
+    project {
+      id
+      name
+    }
+    createdAt
+  }
+}
+
+mutation UpdateDailyLog($id: ID!, $input: UpdateDailyLogInput!) {
+  updateDailyLog(id: $id, input: $input) {
+    id
+    date
+    status
+    notes
+    weatherDelay
+    weatherDelayNotes
+    updatedAt
+  }
+}
+
+mutation SubmitDailyLog($id: ID!) {
+  submitDailyLog(id: $id) {
+    id
+    status
+    submittedAt
+  }
+}
+
+mutation ApproveDailyLog($id: ID!) {
+  approveDailyLog(id: $id) {
+    id
+    status
+    approvedAt
+    approver {
+      id
+      name
+    }
+  }
+}
+
+mutation RejectDailyLog($id: ID!, $reason: String!) {
+  rejectDailyLog(id: $id, reason: $reason) {
+    id
+    status
+  }
+}
+
+mutation ClockIn($input: ClockInInput!) {
+  clockIn(input: $input) {
+    id
+    clockIn
+    status
+    project {
+      id
+      name
+    }
+    gpsInLatitude
+    gpsInLongitude
+    createdAt
+  }
+}
+
+mutation ClockOut($id: ID!, $input: ClockOutInput!) {
+  clockOut(id: $id, input: $input) {
+    id
+    clockIn
+    clockOut
+    breakMinutes
+    status
+    totalHours
+    gpsOutLatitude
+    gpsOutLongitude
+    updatedAt
+  }
+}
+
+mutation CreateIncident($input: CreateIncidentInput!) {
+  createIncident(input: $input) {
+    id
+    incidentDate
+    location
+    incidentType
+    severity
+    description
+    status
+    project {
+      id
+      name
+    }
+    reporter {
+      id
+      name
+    }
+    createdAt
+  }
+}
+
+mutation CreatePunchListItem($punchListId: ID!, $input: CreatePunchListItemInput!) {
+  createPunchListItem(punchListId: $punchListId, input: $input) {
+    id
+    description
+    location
+    trade
+    priority
+    status
+    assignee {
+      id
+      name
+    }
+    createdAt
+  }
+}
+
+mutation CompletePunchListItem($id: ID!) {
+  completePunchListItem(id: $id) {
+    id
+    status
+    completedAt
+    completer {
+      id
+      name
+    }
+  }
+}

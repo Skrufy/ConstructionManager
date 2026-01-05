@@ -1,0 +1,53 @@
+# Time Tracking Queries for iOS
+
+query GetTimeEntries($projectId: ID, $userId: ID, $startDate: Date, $endDate: Date, $status: TimeEntryStatus, $page: Int, $pageSize: Int) {
+  timeEntries(projectId: $projectId, userId: $userId, startDate: $startDate, endDate: $endDate, status: $status, page: $page, pageSize: $pageSize) {
+    edges {
+      node {
+        id
+        clockIn
+        clockOut
+        breakMinutes
+        status
+        notes
+        totalHours
+        user {
+          id
+          name
+        }
+        project {
+          id
+          name
+        }
+        createdAt
+        updatedAt
+      }
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+    }
+    totalCount
+  }
+}
+
+query GetActiveTimeEntry {
+  activeTimeEntry {
+    id
+    clockIn
+    breakMinutes
+    status
+    notes
+    gpsInLatitude
+    gpsInLongitude
+    user {
+      id
+      name
+    }
+    project {
+      id
+      name
+    }
+    createdAt
+  }
+}

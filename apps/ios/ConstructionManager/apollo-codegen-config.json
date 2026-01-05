@@ -1,0 +1,40 @@
+{
+  "schemaNamespace": "ConstructionProAPI",
+  "input": {
+    "operationSearchPaths": [
+      "./ConstructionManager/GraphQL/Operations/**/*.graphql"
+    ],
+    "schemaSearchPaths": [
+      "./ConstructionManager/GraphQL/schema.graphqls"
+    ]
+  },
+  "output": {
+    "schemaTypes": {
+      "path": "./ConstructionManager/GraphQL/Generated",
+      "moduleType": {
+        "swiftPackageManager": {}
+      }
+    },
+    "operations": {
+      "inSchemaModule": {}
+    }
+  },
+  "options": {
+    "selectionSetInitializers": {
+      "localCacheMutations": true
+    },
+    "operationDocumentFormat": ["definition"],
+    "schemaCustomization": {
+      "customScalarFormats": {
+        "DateTime": {
+          "module": "Foundation",
+          "type": "Date"
+        },
+        "Date": {
+          "module": "Foundation",
+          "type": "String"
+        }
+      }
+    }
+  }
+}

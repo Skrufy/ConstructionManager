@@ -1,0 +1,1126 @@
+/*
+  Localizable.strings (English)
+  ConstructionManager
+
+  English localization for ConstructionPro iOS app
+*/
+
+// MARK: - Common Actions
+"common.save" = "Save";
+"common.cancel" = "Cancel";
+"common.delete" = "Delete";
+"common.edit" = "Edit";
+"common.add" = "Add";
+"common.done" = "Done";
+"common.close" = "Close";
+"common.back" = "Back";
+"common.next" = "Next";
+"common.submit" = "Submit";
+"common.confirm" = "Confirm";
+"common.ok" = "OK";
+"common.yes" = "Yes";
+"common.no" = "No";
+"common.search" = "Search";
+"common.filter" = "Filter";
+"common.sort" = "Sort";
+"common.refresh" = "Refresh";
+"common.retry" = "Retry";
+"common.loading" = "Loading...";
+"common.error" = "Error";
+"common.success" = "Success";
+"common.warning" = "Warning";
+"common.info" = "Info";
+"common.select" = "Select";
+"common.clear" = "Clear";
+"common.all" = "All";
+"common.none" = "None";
+"common.view" = "View";
+"common.details" = "Details";
+"common.more" = "More";
+"common.less" = "Less";
+"common.show" = "Show";
+"common.hide" = "Hide";
+"common.copy" = "Copy";
+"common.share" = "Share";
+"common.download" = "Download";
+"common.upload" = "Upload";
+"common.required" = "Required";
+"common.optional" = "Optional";
+
+// MARK: - Error Messages
+"error.invalidURL" = "Invalid URL";
+"error.noData" = "No data received";
+"error.decodingFailed" = "Failed to decode response: %@";
+"error.serverError" = "Server error (%d)";
+"error.pleaseLogInAgain" = "Please log in again";
+"error.accessDenied" = "Access denied";
+"error.resourceNotFound" = "Resource not found";
+"error.networkError" = "Network error: %@";
+"error.tooManyRequestsRetry" = "Too many requests. Try again in %d seconds";
+"error.tooManyRequests" = "Too many requests. Please try again later";
+"error.unknown" = "An unknown error occurred";
+"error.invalidAPIURL" = "Invalid API URL configuration";
+"error.serverStatus" = "Server returned status %d";
+"error.connectionTimedOut" = "Connection timed out. Server may be unreachable.";
+"error.cannotFindHost" = "Cannot find host. Check that your network settings are correct.";
+"error.cannotConnectToHost" = "Cannot connect to host. Ensure the server is running and your device is on the same network.";
+"error.networkConnectionLost" = "Network connection lost. Check your WiFi connection.";
+"error.noInternet" = "No internet connection.";
+"error.authenticationFailed" = "Authentication failed";
+"error.loginFailed" = "Login failed";
+"error.sessionExpired" = "Your session has expired. Please sign in again.";
+"error.sessionExpiredPassword" = "Session expired. Please sign in with your password.";
+"error.biometricFailed" = "Biometric authentication failed";
+
+// MARK: - Status Labels
+"status.open" = "Open";
+"status.closed" = "Closed";
+"status.pending" = "Pending";
+"status.approved" = "Approved";
+"status.rejected" = "Rejected";
+"status.inProgress" = "In Progress";
+"status.completed" = "Completed";
+"status.active" = "Active";
+"status.inactive" = "Inactive";
+"status.onHold" = "On Hold";
+"status.draft" = "Draft";
+"status.submitted" = "Submitted";
+"status.verified" = "Verified";
+"status.scheduled" = "Scheduled";
+"status.cancelled" = "Cancelled";
+"status.overdue" = "Overdue";
+"status.onTrack" = "On Track";
+"status.atRisk" = "At Risk";
+"status.delayed" = "Delayed";
+"status.archived" = "Archived";
+
+// MARK: - Priority Labels
+"priority.low" = "Low";
+"priority.medium" = "Medium";
+"priority.high" = "High";
+"priority.critical" = "Critical";
+"priority.urgent" = "Urgent";
+
+// MARK: - Time & Date
+"time.today" = "Today";
+"time.yesterday" = "Yesterday";
+"time.tomorrow" = "Tomorrow";
+"time.thisWeek" = "This Week";
+"time.lastWeek" = "Last Week";
+"time.thisMonth" = "This Month";
+"time.lastMonth" = "Last Month";
+"time.ago" = "ago";
+"time.hours" = "hours";
+"time.minutes" = "minutes";
+"time.days" = "days";
+
+// MARK: - Authentication
+"auth.signIn" = "Sign In";
+"auth.signOut" = "Sign Out";
+"auth.signUp" = "Sign Up";
+"auth.email" = "Email";
+"auth.password" = "Password";
+"auth.confirmPassword" = "Confirm Password";
+"auth.forgotPassword" = "Forgot Password?";
+"auth.rememberMe" = "Remember me";
+"auth.signInTitle" = "Sign in to your account";
+"auth.enterEmail" = "Enter your email";
+"auth.enterPassword" = "Enter your password";
+"auth.invalidCredentials" = "Invalid email or password";
+"auth.sessionExpired" = "Session expired. Please sign in again.";
+"auth.accountPending" = "Account pending approval";
+"auth.createAccount" = "Create Account";
+"auth.alreadyHaveAccount" = "Already have an account?";
+"auth.dontHaveAccount" = "Don't have an account?";
+"auth.signInWith" = "Sign in with %@";
+"auth.signInError" = "Sign In Error";
+"auth.biometricFailed" = "Biometric authentication failed";
+"auth.resetPassword" = "Reset Password";
+"auth.forgotPasswordTitle" = "Forgot Your Password?";
+"auth.forgotPasswordDesc" = "Enter your email address and we'll send you a link to reset your password.";
+"auth.sendResetLink" = "Send Reset Link";
+"auth.resetEmailSent" = "Check Your Email";
+"auth.resetEmailSentDesc" = "We've sent a password reset link to your email. Please check your inbox and follow the instructions.";
+"auth.resetPasswordFailed" = "Failed to send reset email. Please try again.";
+
+// MARK: - Navigation & Tabs
+"nav.home" = "Home";
+"nav.dashboard" = "Dashboard";
+"nav.projects" = "Projects";
+"nav.dailyLogs" = "Daily Logs";
+"nav.timeTracking" = "Time Tracking";
+"nav.documents" = "Documents";
+"nav.drawings" = "Drawings";
+"nav.safety" = "Safety";
+"nav.equipment" = "Equipment";
+"nav.financials" = "Financials";
+"nav.reports" = "Reports";
+"nav.settings" = "Settings";
+"nav.profile" = "Profile";
+"nav.notifications" = "Notifications";
+"nav.more" = "More";
+"nav.tasks" = "Tasks";
+"nav.materials" = "Materials";
+"nav.scheduling" = "Scheduling";
+"nav.subcontractors" = "Subcontractors";
+"nav.clients" = "Clients";
+"nav.certifications" = "Certifications";
+"nav.approvals" = "Approvals";
+"nav.admin" = "Admin";
+"nav.warnings" = "Warnings";
+
+// MARK: - Dashboard
+"dashboard.welcome" = "Welcome";
+"dashboard.welcomeBack" = "Welcome back, %@";
+"dashboard.overview" = "Overview";
+"dashboard.quickActions" = "Quick Actions";
+"dashboard.recentActivity" = "Recent Activity";
+"dashboard.upcomingTasks" = "Upcoming Tasks";
+"dashboard.activeProjects" = "Active Projects";
+"dashboard.clockIn" = "Clock In";
+"dashboard.clockOut" = "Clock Out";
+"dashboard.clockedIn" = "Clocked In";
+"dashboard.notClockedIn" = "Not Clocked In";
+"dashboard.hoursToday" = "Hours Today";
+"dashboard.hoursThisWeek" = "Hours This Week";
+"dashboard.viewAll" = "View All";
+"dashboard.teamOverview" = "Team Overview";
+"dashboard.projectSummary" = "Project Summary";
+"dashboard.currentlyWorking" = "Currently Working";
+"dashboard.unknownProject" = "Unknown Project";
+"dashboard.tapToStart" = "Tap to start your day";
+"dashboard.startedAt" = "Started at";
+"dashboard.duration" = "Duration";
+"dashboard.clockOutQuestion" = "Clock Out?";
+"dashboard.clockOutConfirm" = "Are you sure you want to clock out?";
+"dashboard.recordProgress" = "Record today's progress";
+"dashboard.files" = "files";
+"dashboard.activeWorkers" = "Active Workers";
+"dashboard.onBreak" = "On Break";
+"dashboard.notStarted" = "Not Started";
+"dashboard.pendingLogs" = "Pending Logs";
+"dashboard.viewDrawings" = "View plans";
+"dashboard.accessFiles" = "Access files";
+"dashboard.activeCount" = "%d active";
+"common.total" = "total";
+
+// MARK: - Time Labels (additional)
+"time.session" = "Session";
+
+// MARK: - Projects
+"projects.title" = "Projects";
+"projects.new" = "New Project";
+"projects.create" = "Create Project";
+"projects.edit" = "Edit Project";
+"projects.details" = "Project Details";
+"projects.name" = "Project Name";
+"projects.description" = "Description";
+"projects.location" = "Location";
+"projects.address" = "Address";
+"projects.client" = "Client";
+"projects.startDate" = "Start Date";
+"projects.endDate" = "End Date";
+"projects.estCompletion" = "Est. Completion";
+"projects.budget" = "Budget";
+"projects.status" = "Status";
+"projects.progress" = "Progress";
+"projects.team" = "Team";
+"projects.noProjects" = "No projects found";
+"projects.searchPlaceholder" = "Search projects...";
+"projects.createToStart" = "Create a new project to get started";
+"projects.selectProject" = "Select a Project";
+"projects.selectFromList" = "Choose a project from the list to view details";
+"projects.stats" = "Project Stats";
+"projects.manageTeam" = "Manage Team";
+"projects.viewOnMap" = "View on Map";
+
+// MARK: - Daily Logs
+"dailyLogs.title" = "Daily Logs";
+"dailyLogs.new" = "New Daily Log";
+"dailyLogs.edit" = "Edit Daily Log";
+"dailyLogs.date" = "Date";
+"dailyLogs.weather" = "Weather";
+"dailyLogs.temperature" = "Temperature";
+"dailyLogs.workPerformed" = "Work Performed";
+"dailyLogs.notes" = "Notes";
+"dailyLogs.photos" = "Photos";
+"dailyLogs.addPhoto" = "Add Photo";
+"dailyLogs.crewCount" = "Crew Count";
+"dailyLogs.weatherDelay" = "Weather Delay";
+"dailyLogs.noLogs" = "No Daily Logs";
+"dailyLogs.entries" = "%d entries";
+"dailyLogs.materials" = "%d materials";
+"dailyLogs.noLogsFor" = "No daily logs found for %@";
+"dailyLogs.createFirst" = "Create your first daily log to track project progress";
+"dailyLogs.noLogsYet" = "No daily logs have been created yet";
+"dailyLogs.create" = "Create Daily Log";
+"dailyLogs.unknownProject" = "Unknown Project";
+"dailyLogs.noLogsForProject" = "No logs have been created for %@ yet";
+
+// MARK: - Time Tracking
+"timeTracking.title" = "Time Tracking";
+"timeTracking.clockIn" = "Clock In";
+"timeTracking.clockOut" = "Clock Out";
+"timeTracking.break" = "Break";
+"timeTracking.startBreak" = "Start Break";
+"timeTracking.endBreak" = "End Break";
+"timeTracking.totalHours" = "Total Hours";
+"timeTracking.regularHours" = "Regular Hours";
+"timeTracking.overtimeHours" = "Overtime Hours";
+"timeTracking.selectProject" = "Select Project";
+"timeTracking.currentSession" = "Current Session";
+"timeTracking.history" = "History";
+"timeTracking.noEntries" = "No time entries";
+"timeTracking.pendingApproval" = "Pending Approval";
+"timeTracking.hoursTracked" = "Hours Tracked";
+"timeTracking.today" = "Today";
+"timeTracking.thisWeek" = "This Week";
+"timeTracking.clockOutQuestion" = "Clock Out?";
+"timeTracking.clockOutMessage" = "You will be clocked out of your current project.";
+"timeTracking.currentlyWorking" = "Currently Working";
+"timeTracking.gpsRecorded" = "GPS location recorded";
+
+// MARK: - Safety
+"safety.title" = "Safety";
+"safety.incidents" = "Incidents";
+"safety.inspections" = "Inspections";
+"safety.meetings" = "Safety Meetings";
+"safety.punchLists" = "Punch Lists";
+"safety.newIncident" = "Report Incident";
+"safety.newInspection" = "New Inspection";
+"safety.newMeeting" = "New Safety Meeting";
+"safety.newPunchList" = "New Punch List";
+"safety.reportIncident" = "Report Incident";
+"safety.severity" = "Severity";
+"safety.type" = "Type";
+"safety.location" = "Location";
+"safety.description" = "Description";
+"safety.witnesses" = "Witnesses";
+"safety.photos" = "Photos";
+"safety.actionRequired" = "Action Required";
+"safety.noIncidents" = "No incidents reported";
+"safety.noInspections" = "No inspections found";
+"safety.noMeetings" = "No safety meetings";
+
+// MARK: - Safety Meeting Types
+"safetyMeeting.toolboxTalk" = "Toolbox Talk";
+"safetyMeeting.weekly" = "Weekly Safety";
+"safetyMeeting.monthly" = "Monthly Safety";
+"safetyMeeting.special" = "Special Topic";
+"safetyMeeting.incidentReview" = "Incident Review";
+"safetyMeeting.orientation" = "Safety Orientation";
+"safetyMeeting.ppe" = "PPE";
+"safetyMeeting.hazards" = "Hazards";
+"safetyMeeting.procedures" = "Procedures";
+"safetyMeeting.emergency" = "Emergency";
+"safetyMeeting.equipment" = "Equipment";
+"safetyMeeting.general" = "General";
+
+// MARK: - Incident Types
+"incident.injury" = "Injury";
+"incident.nearMiss" = "Near Miss";
+"incident.propertyDamage" = "Property Damage";
+"incident.environmental" = "Environmental";
+"incident.other" = "Other";
+
+// MARK: - Incident Severity
+"severity.minor" = "Minor";
+"severity.moderate" = "Moderate";
+"severity.serious" = "Serious";
+"severity.critical" = "Critical";
+
+// MARK: - Equipment
+"equipment.title" = "Equipment";
+"equipment.list" = "Equipment List";
+"equipment.new" = "Add Equipment";
+"equipment.edit" = "Edit Equipment";
+"equipment.name" = "Equipment Name";
+"equipment.type" = "Type";
+"equipment.status" = "Status";
+"equipment.location" = "Location";
+"equipment.serialNumber" = "Serial Number";
+"equipment.available" = "Available";
+"equipment.inUse" = "In Use";
+"equipment.maintenance" = "Maintenance";
+"equipment.outOfService" = "Out of Service";
+"equipment.noEquipment" = "No equipment found";
+
+// MARK: - Documents
+"documents.title" = "Documents";
+"documents.upload" = "Upload Document";
+"documents.download" = "Download";
+"documents.preview" = "Preview";
+"documents.delete" = "Delete Document";
+"documents.folders" = "Folders";
+"documents.files" = "Files";
+"documents.noDocuments" = "No documents found";
+"documents.searchPlaceholder" = "Search documents...";
+"documents.jobsite" = "Jobsite";
+"documents.allJobsites" = "All Jobsites";
+"documents.expiringSoon" = "%d document(s) expiring soon";
+"documents.tapToSelect" = "Tap to select file";
+"documents.noneGeneral" = "None - General Document";
+"documents.category" = "Category";
+"documents.hasExpiration" = "Has Expiration Date";
+"documents.expirationDate" = "Expiration Date";
+"documents.details" = "Document Details";
+"documents.tags" = "Tags";
+"documents.view" = "View Document";
+
+// MARK: - Drawings
+"drawings.title" = "Drawings";
+"drawings.upload" = "Upload Drawing";
+"drawings.versions" = "Versions";
+"drawings.markup" = "Markup";
+"drawings.annotations" = "Annotations";
+"drawings.noDrawings" = "No Drawings";
+"drawings.allProjects" = "All Projects";
+"drawings.count" = "%d drawings";
+"drawings.searchPlaceholder" = "Search drawings...";
+"drawings.usingSampleData" = "Using Sample Data";
+"drawings.unableToLoad" = "Unable to Load Drawings";
+"drawings.noDrawingsFor" = "No Drawings for %@";
+"drawings.noDrawingsYet" = "This project has no drawings uploaded yet.";
+"drawings.willAppear" = "Drawings will appear here once uploaded.";
+"drawings.offlineDrawings" = "Offline Drawings";
+
+// MARK: - Financials
+"financials.title" = "Financials";
+"financials.budget" = "Budget";
+"financials.expenses" = "Expenses";
+"financials.invoices" = "Invoices";
+"financials.payments" = "Payments";
+"financials.changeOrders" = "Change Orders";
+"financials.totalBudget" = "Total Budget";
+"financials.spent" = "Spent";
+"financials.remaining" = "Remaining";
+
+// MARK: - Reports
+"reports.title" = "Reports";
+"reports.generate" = "Generate Report";
+"reports.export" = "Export";
+"reports.type" = "Report Type";
+"reports.period" = "Period";
+"reports.project" = "Project";
+"reports.labor" = "Labor Report";
+"reports.safety" = "Safety Report";
+"reports.financial" = "Financial Report";
+"reports.equipment" = "Equipment Report";
+"reports.daily" = "Daily Report";
+
+// MARK: - Settings
+"settings.title" = "Settings";
+"settings.profile" = "Profile";
+"settings.account" = "Account";
+"settings.notifications" = "Notifications";
+"settings.appearance" = "Appearance";
+"settings.language" = "Language";
+"settings.privacy" = "Privacy";
+"settings.security" = "Security";
+"settings.help" = "Help & Support";
+"settings.about" = "About";
+"settings.version" = "Version";
+"settings.logout" = "Log Out";
+"settings.deleteAccount" = "Delete Account";
+"settings.theme" = "Theme";
+"settings.themeLight" = "Light";
+"settings.themeDark" = "Dark";
+"settings.themeSystem" = "System";
+"settings.languageSelect" = "Select Language";
+"settings.languageEnglish" = "English";
+"settings.languageSpanish" = "Spanish";
+"settings.languageDesc" = "Choose your preferred language";
+
+// MARK: - Profile
+"profile.title" = "Profile";
+"profile.edit" = "Edit Profile";
+"profile.name" = "Name";
+"profile.email" = "Email";
+"profile.phone" = "Phone";
+"profile.role" = "Role";
+"profile.company" = "Company";
+"profile.changePhoto" = "Change Photo";
+"profile.removePhoto" = "Remove Photo";
+
+// MARK: - Notifications
+"notifications.title" = "Notifications";
+"notifications.markAllRead" = "Mark All as Read";
+"notifications.noNotifications" = "No notifications";
+"notifications.settings" = "Notification Settings";
+
+// MARK: - Errors
+"error.generic" = "Something went wrong. Please try again.";
+"error.network" = "Network error. Please check your connection.";
+"error.unauthorized" = "You are not authorized to perform this action.";
+"error.notFound" = "The requested item was not found.";
+"error.serverError" = "Server error. Please try again later.";
+"error.validationFailed" = "Please check your input and try again.";
+"error.sessionExpired" = "Your session has expired. Please sign in again.";
+"error.offline" = "You are currently offline.";
+"error.loadFailed" = "Failed to load data.";
+"error.saveFailed" = "Failed to save changes.";
+"error.deleteFailed" = "Failed to delete item.";
+"error.uploadFailed" = "Failed to upload file.";
+"error.downloadFailed" = "Failed to download file.";
+"error.connectionFailed" = "Connection Failed";
+"error.showingSampleData" = "Showing sample data. Check network settings.";
+"error.checkConnection" = "Check your network connection and try again.";
+
+// MARK: - Success Messages
+"success.saved" = "Changes saved successfully.";
+"success.deleted" = "Item deleted successfully.";
+"success.uploaded" = "File uploaded successfully.";
+"success.submitted" = "Submitted successfully.";
+"success.created" = "Created successfully.";
+"success.updated" = "Updated successfully.";
+
+// MARK: - Confirmations
+"confirm.delete" = "Are you sure you want to delete this item?";
+"confirm.discard" = "Are you sure you want to discard your changes?";
+"confirm.signOut" = "Are you sure you want to sign out?";
+"confirm.submit" = "Are you sure you want to submit?";
+"confirm.cancel" = "Are you sure you want to cancel?";
+"confirm.cannotUndo" = "This action cannot be undone.";
+
+// MARK: - Empty States
+"empty.projects" = "No projects yet";
+"empty.dailyLogs" = "No daily logs yet";
+"empty.timeEntries" = "No time entries yet";
+"empty.documents" = "No documents yet";
+"empty.drawings" = "No drawings yet";
+"empty.tasks" = "No tasks yet";
+"empty.notifications" = "No notifications";
+"empty.searchResults" = "No results found";
+
+// MARK: - Offline
+"offline.banner" = "You are offline";
+"offline.savedLocally" = "Saved locally. Will sync when online.";
+"offline.pendingSync" = "Pending sync";
+"offline.syncing" = "Syncing...";
+"offline.syncComplete" = "Sync complete";
+"offline.syncFailed" = "Sync failed";
+
+// MARK: - Punch List
+"punchList.title" = "Punch List";
+"punchList.new" = "New Item";
+"punchList.edit" = "Edit Item";
+"punchList.item" = "Item";
+"punchList.location" = "Location";
+"punchList.trade" = "Trade";
+"punchList.assignedTo" = "Assigned To";
+"punchList.dueDate" = "Due Date";
+"punchList.markComplete" = "Mark Complete";
+"punchList.verify" = "Verify";
+"punchList.noItems" = "No punch list items";
+
+// MARK: - Certifications
+"certifications.title" = "Certifications";
+"certifications.new" = "Add Certification";
+"certifications.name" = "Certification Name";
+"certifications.issuer" = "Issuer";
+"certifications.issueDate" = "Issue Date";
+"certifications.expiryDate" = "Expiry Date";
+"certifications.expiring" = "Expiring Soon";
+"certifications.expired" = "Expired";
+"certifications.valid" = "Valid";
+"certifications.noCertifications" = "No certifications";
+
+// MARK: - Approvals
+"approvals.title" = "Approvals";
+"approvals.pending" = "Pending Approvals";
+"approvals.approve" = "Approve";
+"approvals.reject" = "Reject";
+"approvals.approved" = "Approved";
+"approvals.rejected" = "Rejected";
+"approvals.noApprovals" = "No pending approvals";
+
+// MARK: - Admin
+"admin.title" = "Admin";
+"admin.users" = "User Management";
+"admin.roles" = "Roles & Permissions";
+"admin.company" = "Company Settings";
+"admin.inviteUser" = "Invite User";
+"admin.manageUsers" = "Manage Users";
+
+// Admin Section Headers
+"admin.sectionUserManagement" = "User Management";
+"admin.sectionLogsAudit" = "Logs & Audit";
+"admin.sectionOrganization" = "Organization";
+
+// Admin Menu Items
+"admin.usersTitle" = "Users";
+"admin.usersSubtitle" = "Manage team members";
+"admin.invitationsTitle" = "Invitations";
+"admin.invitationsSubtitle" = "Pending user invites";
+"admin.rolesTitle" = "Roles & Permissions";
+"admin.rolesSubtitle" = "Configure access levels";
+"admin.auditLogsTitle" = "Audit Logs";
+"admin.auditLogsSubtitle" = "View activity history";
+"admin.companySettingsTitle" = "Company Settings";
+"admin.companySettingsSubtitle" = "Edit company profile";
+"admin.moduleSettingsTitle" = "Module Settings";
+"admin.moduleSettingsSubtitle" = "Enable/disable features company-wide";
+"admin.labelsTitle" = "Labels";
+"admin.labelsSubtitle" = "Manage project labels";
+
+// User Management
+"admin.searchUsersPlaceholder" = "Search users...";
+"admin.noUsersFound" = "No Users Found";
+"admin.activeCount" = "Active";
+"admin.adminsCount" = "Admins";
+"admin.totalCount" = "Total";
+
+// Audit Logs
+"admin.allActions" = "All Actions";
+"admin.noAuditLogs" = "No Audit Logs";
+
+// Labels Management
+"admin.noLabels" = "No Labels";
+"admin.createLabel" = "Create Label";
+"admin.labelName" = "Label Name";
+"admin.enterLabelName" = "Enter label name";
+"admin.labelCategory" = "Category";
+"admin.labelScope" = "Scope";
+"admin.labelColor" = "Color";
+"admin.labelPreview" = "Preview";
+"admin.labelNamePlaceholder" = "Label Name";
+"admin.newLabel" = "New Label";
+"admin.failedToCreateLabel" = "Failed to create label";
+
+// Invitations
+"admin.noInvitations" = "No Invitations";
+"admin.inviteUsersToJoin" = "Invite users to join your organization";
+"admin.resendInvitation" = "Resend Invitation";
+"admin.cancelInvitation" = "Cancel Invitation";
+"admin.invitedBy" = "Invited by %@";
+"admin.expired" = "Expired";
+"admin.expiresInDays" = "Expires in %d days";
+"admin.pendingCount" = "Pending";
+
+// Invite User
+"admin.emailAddress" = "Email Address";
+"admin.enterEmail" = "Enter email";
+"admin.roleLabel" = "Role";
+"admin.personalMessage" = "Personal Message (Optional)";
+"admin.sendInvitation" = "Send Invitation";
+"admin.invitationSent" = "Invitation Sent!";
+"admin.invitationSentMessage" = "An invitation has been sent to %@";
+"admin.failedToSendInvitation" = "Failed to send invitation";
+
+// User Detail
+"admin.userDetails" = "User Details";
+"admin.phone" = "Phone";
+"admin.memberSince" = "Member Since";
+"admin.roleAndStatus" = "Role & Status";
+"admin.role" = "Role";
+"admin.status" = "Status";
+"admin.modified" = "Modified";
+"admin.saveChanges" = "Save Changes";
+"admin.actions" = "Actions";
+"admin.sendPasswordReset" = "Send Password Reset";
+"admin.deactivateUser" = "Deactivate User";
+"admin.done" = "Done";
+"admin.sendPasswordResetQuestion" = "Send Password Reset?";
+"admin.passwordResetMessage" = "A password reset email will be sent to %@";
+"admin.sendResetEmail" = "Send Reset Email";
+"admin.deactivateUserQuestion" = "Deactivate User?";
+"admin.deactivateUserMessage" = "This user will no longer be able to access the system. You can reactivate them later.";
+"admin.deactivate" = "Deactivate";
+"admin.success" = "Success";
+"admin.userUpdated" = "User updated successfully";
+"admin.passwordResetSent" = "Password reset email sent to %@";
+"admin.failedToSendPasswordReset" = "Failed to send password reset email";
+"admin.userDeactivated" = "User has been deactivated";
+"admin.failedToDeactivateUser" = "Failed to deactivate user";
+"admin.failedToUpdateRole" = "Failed to update role";
+"admin.failedToUpdateStatus" = "Failed to update status";
+
+// Role & Status Pickers
+"admin.selectRole" = "Select Role";
+"admin.selectStatus" = "Select Status";
+"admin.statusActiveDesc" = "User can access the system";
+"admin.statusInactiveDesc" = "User cannot access the system";
+"admin.statusPendingDesc" = "Awaiting activation";
+"admin.statusSuspendedDesc" = "Temporarily suspended";
+
+// Roles & Permissions
+"admin.rolesDescription" = "Configure user roles and access levels for your organization.";
+"admin.availableRoles" = "Available Roles";
+"admin.permissions" = "Permissions";
+"admin.hierarchy" = "Hierarchy";
+"admin.levelFormat" = "Level %d";
+
+// Module Settings
+"admin.moduleSettingsWarning" = "These settings affect ALL users in your organization.";
+"admin.coreSection" = "Core";
+"admin.resourcesSection" = "Resources";
+"admin.safetyQualitySection" = "Safety & Quality";
+"admin.financeReportsSection" = "Finance & Reports";
+"admin.businessSection" = "Business";
+"admin.integrationsSection" = "Integrations";
+
+// Module Names & Descriptions
+"admin.moduleTimeTracking" = "Time Tracking";
+"admin.moduleTimeTrackingDesc" = "Clock in/out and timesheets";
+"admin.moduleDailyLogs" = "Daily Logs";
+"admin.moduleDailyLogsDesc" = "Daily progress reports";
+"admin.moduleTasks" = "Tasks & RFIs";
+"admin.moduleTasksDesc" = "Task management and RFIs";
+"admin.moduleScheduling" = "Scheduling";
+"admin.moduleSchedulingDesc" = "Crew scheduling and calendar";
+"admin.moduleDrawings" = "Drawings";
+"admin.moduleDrawingsDesc" = "Construction drawings";
+"admin.moduleDocuments" = "Documents";
+"admin.moduleDocumentsDesc" = "Project documents and files";
+"admin.moduleEquipment" = "Equipment";
+"admin.moduleEquipmentDesc" = "Equipment tracking";
+"admin.moduleMaterials" = "Materials";
+"admin.moduleMaterialsDesc" = "Materials inventory";
+"admin.moduleSubcontractors" = "Subcontractors";
+"admin.moduleSubcontractorsDesc" = "Subcontractor management";
+"admin.moduleCertifications" = "Certifications";
+"admin.moduleCertificationsDesc" = "License tracking";
+"admin.moduleSafety" = "Safety & Quality";
+"admin.moduleSafetyDesc" = "Incidents, inspections, punch lists";
+"admin.moduleApprovals" = "Approvals";
+"admin.moduleApprovalsDesc" = "Approval workflows";
+"admin.moduleWarnings" = "Employee Warnings";
+"admin.moduleWarningsDesc" = "Discipline tracking";
+"admin.moduleFinancials" = "Financials";
+"admin.moduleFinancialsDesc" = "Budgets and expenses";
+"admin.moduleReports" = "Reports & Analytics";
+"admin.moduleReportsDesc" = "Reports generation and KPI dashboards";
+"admin.moduleClients" = "Clients";
+"admin.moduleClientsDesc" = "Client management";
+"admin.moduleDroneDeploy" = "DroneDeploy";
+"admin.moduleDroneDeployDesc" = "Aerial mapping";
+
+// Module Settings Actions
+"admin.saving" = "Saving...";
+"admin.saveModuleSettings" = "Save Module Settings";
+"admin.settingsSaved" = "Settings Saved";
+"admin.moduleSettingsSavedMessage" = "Module settings have been updated for all users.";
+
+// MARK: - Warnings
+"warnings.title" = "Warnings";
+"warnings.new" = "Issue Warning";
+"warnings.employee" = "Employee";
+"warnings.type" = "Warning Type";
+"warnings.severity" = "Severity";
+"warnings.date" = "Date";
+"warnings.description" = "Description";
+"warnings.noWarnings" = "No warnings";
+
+// MARK: - Materials
+"materials.title" = "Materials";
+"materials.order" = "Order Materials";
+"materials.inventory" = "Inventory";
+"materials.usage" = "Usage";
+"materials.noMaterials" = "No materials";
+"materials.searchPlaceholder" = "Search materials...";
+"materials.allStatus" = "All Status";
+"materials.inStock" = "In Stock";
+"materials.lowStock" = "Low Stock";
+"materials.outOfStock" = "Out of Stock";
+"materials.noMaterialsTitle" = "No Materials";
+"materials.addToTrack" = "Add materials to track your inventory and usage";
+"materials.add" = "Add Material";
+"materials.details" = "Material Details";
+"materials.status" = "Status";
+"materials.quantityOnHand" = "Quantity on Hand";
+"materials.minimumQuantity" = "Minimum Quantity";
+"materials.costPerUnit" = "Cost per Unit";
+"materials.totalValue" = "Total Value";
+"materials.supplier" = "Supplier";
+"materials.sku" = "SKU";
+"materials.storageLocation" = "Storage Location";
+"materials.assignedProject" = "Assigned Project";
+"materials.notes" = "Notes";
+"materials.actions" = "Actions";
+"materials.orderMore" = "Order More";
+"materials.logUsage" = "Log Usage";
+"materials.detailsSection" = "Details";
+"materials.lastOrdered" = "Last Ordered";
+"materials.lastDelivery" = "Last Delivery";
+"materials.created" = "Created";
+"materials.new" = "New Material";
+"materials.information" = "Material Information";
+"materials.name" = "Name";
+"materials.namePlaceholder" = "Enter material name";
+"materials.description" = "Description";
+"materials.descriptionPlaceholder" = "Optional description...";
+"materials.category" = "Category";
+"materials.skuPlaceholder" = "e.g., LUM-2x4x8-PT";
+"materials.unitOfMeasure" = "Unit of Measure";
+"materials.quantityPlaceholder" = "0";
+"materials.minimumQty" = "Minimum Qty";
+"materials.costPerUnitLabel" = "Cost per Unit ($)";
+"materials.costPlaceholder" = "0.00";
+"materials.supplierStorage" = "Supplier & Storage";
+"materials.supplierPlaceholder" = "e.g., Home Depot Pro";
+"materials.locationPlaceholder" = "e.g., Lot A - North Side";
+"materials.notesPlaceholder" = "Additional notes...";
+"materials.createError" = "Failed to create material:";
+
+// MARK: - Scheduling
+"scheduling.title" = "Scheduling";
+"scheduling.calendar" = "Calendar";
+"scheduling.crew" = "Crew Schedule";
+"scheduling.addEvent" = "Add Event";
+"scheduling.noEvents" = "No scheduled events";
+"scheduling.viewDay" = "Day";
+"scheduling.viewWeek" = "Week";
+"scheduling.viewMode" = "View";
+"scheduling.noSchedules" = "No Schedules";
+"scheduling.noCrewScheduled" = "No crew scheduled for this day";
+"scheduling.createSchedule" = "Create Schedule";
+"scheduling.confirmedCount" = "%d/%d confirmed";
+"scheduling.project" = "Project";
+"scheduling.selectProject" = "Select a project";
+"scheduling.date" = "Date";
+"scheduling.workHours" = "Work Hours";
+"scheduling.start" = "Start";
+"scheduling.end" = "End";
+"scheduling.status" = "Status";
+"scheduling.notes" = "Notes";
+"scheduling.notesPlaceholder" = "e.g., Focus on 3rd floor framing...";
+"scheduling.details" = "Schedule Details";
+"scheduling.schedule" = "Schedule";
+"scheduling.selectProjectTitle" = "Select Project";
+"scheduling.published" = "Published";
+
+// MARK: - Subcontractors
+"subcontractors.title" = "Subcontractors";
+"subcontractors.new" = "Add Subcontractor";
+"subcontractors.name" = "Company Name";
+"subcontractors.contact" = "Contact";
+"subcontractors.trade" = "Trade";
+"subcontractors.noSubcontractors" = "No subcontractors";
+
+// MARK: - Photo/Camera
+"photo.takePhoto" = "Take Photo";
+"photo.chooseFromLibrary" = "Choose from Library";
+"photo.removePhoto" = "Remove Photo";
+"photo.addCaption" = "Add Caption";
+
+// MARK: - File Types
+"file.pdf" = "PDF Document";
+"file.image" = "Image";
+"file.document" = "Document";
+"file.spreadsheet" = "Spreadsheet";
+"file.drawing" = "Drawing";
+
+// MARK: - Units
+"unit.hours" = "hours";
+"unit.minutes" = "minutes";
+"unit.days" = "days";
+"unit.feet" = "ft";
+"unit.meters" = "m";
+"unit.sqft" = "sq ft";
+"unit.sqm" = "sq m";
+
+// MARK: - Roles
+"role.admin" = "Admin";
+"role.projectManager" = "Project Manager";
+"role.superintendent" = "Superintendent";
+"role.foreman" = "Foreman";
+"role.crewLeader" = "Crew Leader";
+"role.fieldWorker" = "Field Worker";
+"role.office" = "Office Staff";
+"role.viewer" = "Viewer";
+
+// MARK: - Clients
+"clients.title" = "Clients";
+"clients.searchPlaceholder" = "Search by company or contact...";
+"clients.noClients" = "No Clients Found";
+"clients.addFirst" = "Add your first client to get started";
+"clients.add" = "Add Client";
+"clients.projectsCount" = "%d projects";
+"clients.contactInfo" = "Contact Information";
+"clients.statistics" = "Statistics";
+"clients.notes" = "Notes";
+"clients.details" = "Client Details";
+"clients.deleteClient" = "Delete Client";
+"clients.deleteConfirm" = "Are you sure you want to delete this client? This action cannot be undone.";
+"clients.noProjectsYet" = "This client has no projects yet";
+"clients.clientProjects" = "%@ Projects";
+"clients.companyInfo" = "Company Information";
+"clients.companyName" = "Company Name";
+"clients.companyNamePlaceholder" = "Enter company name";
+"clients.contactName" = "Contact Name";
+"clients.contactNamePlaceholder" = "Primary contact person";
+"clients.industry" = "Industry";
+"clients.contactDetails" = "Contact Details";
+"clients.email" = "Email";
+"clients.emailPlaceholder" = "email@company.com";
+"clients.phone" = "Phone";
+"clients.phonePlaceholder" = "(555) 123-4567";
+"clients.website" = "Website";
+"clients.websitePlaceholder" = "https://www.company.com";
+"clients.address" = "Address";
+"clients.streetAddress" = "Street Address";
+"clients.addressPlaceholder" = "Start typing an address...";
+"clients.city" = "City";
+"clients.cityPlaceholder" = "Los Angeles";
+"clients.state" = "State";
+"clients.statePlaceholder" = "CA";
+"clients.zip" = "ZIP";
+"clients.zipPlaceholder" = "90001";
+"clients.additionalInfo" = "Additional Information";
+"clients.notesPlaceholder" = "Add any additional notes about this client...";
+"clients.saveChanges" = "Save Changes";
+"clients.new" = "New Client";
+"clients.edit" = "Edit Client";
+"clients.status" = "Status";
+"clients.selectClient" = "Select Client";
+"clients.selectPlaceholder" = "Select a client...";
+"clients.addFirstForProject" = "Add clients first to select one for this project";
+"clients.tryDifferentSearch" = "Try a different search term";
+
+// MARK: - Settings Extended
+"settings.close" = "Close";
+"settings.personalInfo" = "Personal Information";
+"settings.fullName" = "Full Name";
+"settings.fullNamePlaceholder" = "Enter your name";
+"settings.emailPlaceholder" = "Enter your email";
+"settings.phonePlaceholder" = "Enter your phone";
+"settings.saving" = "Saving...";
+"settings.saveChanges" = "Save Changes";
+"settings.endSession" = "End your current session";
+"settings.signOutConfirm" = "Are you sure you want to sign out?";
+"settings.profileSaved" = "Profile Saved";
+"settings.profileSavedMessage" = "Your profile has been updated successfully.";
+"settings.companyInfo" = "Company Information";
+"settings.companyName" = "Company Name";
+"settings.companyNamePlaceholder" = "Enter company name";
+"settings.timezone" = "Timezone";
+"settings.dateFormat" = "Date Format";
+"settings.currency" = "Currency";
+"settings.fieldSettings" = "Field Settings";
+"settings.requireGPS" = "Require GPS for Clock In/Out";
+"settings.requireGPSDesc" = "Location services required for time tracking";
+"settings.requirePhoto" = "Require Photo in Daily Logs";
+"settings.requirePhotoDesc" = "At least one photo must be attached";
+"settings.requireApproval" = "Require Daily Log Approval";
+"settings.requireApprovalDesc" = "Logs need manager approval";
+"settings.autoApprove" = "Auto-Approve Timesheets";
+"settings.autoApproveDesc" = "Skip approval queue for time entries";
+"settings.hideBuildingInfo" = "Hide Building/Location Info";
+"settings.hideBuildingInfoDesc" = "Hide building, floor, room fields";
+"settings.pushNotifications" = "Push Notifications";
+"settings.pushNotificationsDesc" = "Receive mobile push notifications";
+"settings.emailNotifications" = "Email Notifications";
+"settings.emailNotificationsDesc" = "Receive email notifications";
+"settings.saveSettings" = "Save Settings";
+"settings.settingsSaved" = "Settings Saved";
+"settings.companySettingsSavedMessage" = "Company settings have been updated successfully.";
+"settings.teamMembers" = "Team Members";
+"settings.userCount" = "%d user(s)";
+"settings.addUser" = "Add User";
+"settings.searchUsers" = "Search users...";
+"settings.rolePermissions" = "Role-Based Permissions";
+"settings.rolePermissionsDesc" = "Configure access levels for each role";
+"settings.roleHierarchy" = "Role Hierarchy";
+"settings.permissionsCount" = "%d permissions";
+"settings.managePermissions" = "Manage Permissions";
+"settings.permissionLevels" = "Permission Levels";
+"settings.byRole" = "By Role";
+"settings.byRoleDesc" = "Default permission from role";
+"settings.added" = "Added";
+"settings.addedDesc" = "Custom override granting access";
+"settings.removed" = "Removed";
+"settings.removedDesc" = "Custom override revoking access";
+"settings.project" = "Project";
+"settings.projectDesc" = "Elevated access on specific project";
+"settings.darkMode" = "Dark Mode";
+"settings.darkModeDesc" = "Use dark color scheme";
+"settings.defaultView" = "Default View";
+"settings.defaultViewDesc" = "Choose your preferred layout";
+"settings.showCompleted" = "Show Completed Tasks";
+"settings.showCompletedDesc" = "Display completed items in lists";
+"settings.mobileVisibility" = "Mobile Visibility";
+"settings.mobileVisibilityDesc" = "Hide modules from YOUR mobile view only. Other users are not affected.";
+"settings.visibleOnMobile" = "Visible on mobile";
+"settings.hiddenOnMobile" = "Hidden on mobile";
+"settings.emailPrefs" = "Email Notifications";
+"settings.dailyDigest" = "Daily Digest";
+"settings.dailyDigestDesc" = "Daily summary email";
+"settings.approvalNotifs" = "Approval Notifications";
+"settings.approvalNotifsDesc" = "When items need approval";
+"settings.certAlerts" = "Certification Alerts";
+"settings.certAlertsDesc" = "Expiring certifications";
+"settings.savePreferences" = "Save Preferences";
+"settings.preferencesSaved" = "Preferences Saved";
+"settings.preferencesSavedMessage" = "Your preferences have been updated successfully.";
+"settings.createUser" = "Create User";
+"settings.role" = "Role";
+"settings.tabProfile" = "Profile";
+"settings.tabCompany" = "Company";
+"settings.tabUsers" = "Users";
+"settings.tabPermissions" = "Permissions";
+"settings.tabPreferences" = "Preferences";
+"settings.account" = "Account";
+"settings.notifications" = "Notifications";
+
+// MARK: - Tasks & RFIs
+"tasks.title" = "Tasks & RFIs";
+"tasks.tab" = "Tasks";
+"tasks.tasksCount" = "Tasks (%d)";
+"tasks.rfisCount" = "RFIs (%d)";
+"tasks.noTasks" = "No Tasks";
+"tasks.createToTrack" = "Create a task to track work items";
+"tasks.create" = "Create Task";
+"tasks.noRFIs" = "No RFIs";
+"tasks.createRFIDesc" = "Create an RFI to request information";
+"tasks.createRFI" = "Create RFI";
+"tasks.project" = "Project";
+"tasks.selectProject" = "Select a project";
+"tasks.taskTitle" = "Task Title";
+"tasks.taskTitlePlaceholder" = "e.g., Complete electrical rough-in";
+"tasks.description" = "Description";
+"tasks.descriptionPlaceholder" = "Describe the task in detail...";
+"tasks.priority" = "Priority";
+"tasks.dueDate" = "Due Date";
+"tasks.createTaskTitle" = "Create Task";
+"tasks.subject" = "Subject";
+"tasks.subjectPlaceholder" = "e.g., Structural beam clarification at grid B-4";
+"tasks.question" = "Question";
+"tasks.questionPlaceholder" = "Describe your question or request for information...";
+"tasks.responseDue" = "Response Due";
+"tasks.submitRFI" = "Submit RFI";
+"tasks.createRFITitle" = "Create RFI";
+"tasks.selectProjectTitle" = "Select Project";
+"tasks.taskDetails" = "Task Details";
+"tasks.answer" = "Answer:";
+
+// MARK: - Financials
+"financials.title" = "Financials";
+"financials.invoices" = "Invoices";
+"financials.expenses" = "Expenses";
+"financials.changeOrders" = "Change Orders";
+"financials.newExpense" = "New Expense";
+"financials.viewBudget" = "View Budget";
+"financials.accessRestricted" = "Access Restricted";
+"financials.noPermission" = "You don't have permission to view financial data";
+"financials.pendingInvoices" = "Pending Invoices";
+"financials.overdue" = "Overdue";
+"financials.pendingExpenses" = "Pending Expenses";
+"financials.noInvoices" = "No Invoices";
+"financials.invoicesWillAppear" = "Invoices will appear here when created";
+"financials.noExpenses" = "No Expenses";
+"financials.addExpense" = "Add Expense";
+"financials.noChangeOrders" = "No Change Orders";
+"financials.changeOrdersWillAppear" = "Change orders will appear here when created";
+"financials.approveInvoice" = "Approve Invoice";
+"financials.markAsPaid" = "Mark as Paid";
+"financials.recordPayment" = "Record Payment";
+"financials.recordAdditionalPayment" = "Record Additional Payment";
+"financials.paymentAmount" = "Payment Amount";
+"financials.invoiceTotal" = "Invoice Total";
+"financials.previouslyPaid" = "Previously Paid";
+"financials.remainingDue" = "Remaining Due";
+"financials.approveExpense" = "Approve Expense";
+"financials.rejectExpense" = "Reject Expense";
+"financials.approveChangeOrder" = "Approve Change Order";
+"financials.rejectChangeOrder" = "Reject Change Order";
+"financials.noProject" = "No Project";
+"financials.noImpact" = "No Impact";
+
+// MARK: - Drawing Categories
+"drawings.category.all" = "All";
+"drawings.category.architectural" = "Architectural";
+"drawings.category.structural" = "Structural";
+"drawings.category.mechanical" = "Mechanical";
+"drawings.category.electrical" = "Electrical";
+"drawings.category.plumbing" = "Plumbing";
+"drawings.category.civil" = "Civil";
+"drawings.category.landscape" = "Landscape";
+"drawings.category.interiorDesign" = "Interior Design";
+"drawings.category.fireProtection" = "Fire Protection";
+"drawings.category.other" = "Other";
+
+// MARK: - Document Categories
+"documents.category.all" = "All";
+"documents.category.license" = "License";
+"documents.category.certification" = "Certification";
+"documents.category.insurance" = "Insurance";
+"documents.category.contract" = "Contract";
+"documents.category.permit" = "Permit";
+"documents.category.report" = "Report";
+"documents.category.photo" = "Photo";
+"documents.category.other" = "Other";
+
+// MARK: - Safety
+"safety.searchIncidents" = "Search incidents...";
+"safety.searchInspections" = "Search inspections...";
+"safety.filter.all" = "All";
+"safety.stat.open" = "Open";
+"safety.stat.critical" = "Critical";
+"safety.stat.closed30d" = "Closed (30d)";
+"safety.noIncidents" = "No Incidents";
+"safety.noIncidentsDesc" = "No safety incidents have been reported";
+"safety.status.reported" = "Reported";
+"safety.status.underInvestigation" = "Under Investigation";
+"safety.status.closed" = "Closed";
+"safety.stat.passed" = "Passed";
+"safety.stat.failed" = "Failed";
+"safety.stat.pending" = "Pending";
+"safety.noInspections" = "No Inspections";
+"safety.noInspectionsDesc" = "No inspections have been completed";
+"safety.inspection.pending" = "Pending";
+"safety.inspection.passed" = "Passed";
+"safety.inspection.failed" = "Failed";
+"safety.inspection.requiresFollowup" = "Needs Follow-up";
+"reports.noHistoryDesc" = "Generate reports to see them here";
+
+// MARK: - Safety Meetings
+"safetyMeeting.toolboxTalk" = "Toolbox Talk";
+"safetyMeeting.weekly" = "Weekly Safety";
+"safetyMeeting.monthly" = "Monthly Safety";
+"safetyMeeting.special" = "Special Topic";
+"safetyMeeting.incidentReview" = "Incident Review";
+"safetyMeeting.orientation" = "Safety Orientation";
+"safetyMeeting.ppe" = "PPE";
+"safetyMeeting.hazards" = "Hazards";
+"safetyMeeting.procedures" = "Procedures";
+"safetyMeeting.emergency" = "Emergency";
+"safetyMeeting.equipment" = "Equipment";
+"safetyMeeting.general" = "General";
+"safetyMeeting.stat.scheduled" = "Scheduled";
+"safetyMeeting.stat.completed" = "Completed";
+"safetyMeeting.stat.thisMonth" = "This Month";
+"safetyMeeting.noMeetings" = "No Safety Meetings";
+"safetyMeeting.attendeesCount" = "%d attendees";
+"safetyMeeting.minuteFormat" = "%d min";
+
+// MARK: - Punch Lists
+"punchList.searchPlaceholder" = "Search punch lists...";
+"punchList.stat.open" = "Open";
+"punchList.stat.inProgress" = "In Progress";
+"punchList.stat.completed" = "Completed";
+"punchList.noPunchLists" = "No Punch Lists";
+"punchList.status.open" = "Open";
+"punchList.status.inProgress" = "In Progress";
+"punchList.status.completed" = "Completed";
+"punchList.status.verified" = "Verified";
+"punchList.priority.low" = "Low";
+"punchList.priority.medium" = "Medium";
+"punchList.priority.high" = "High";
+"punchList.priority.critical" = "Critical";
+
+// MARK: - Reports
+"reports.title" = "Reports & Analytics";
+"reports.tab.reports" = "Reports";
+"reports.tab.analytics" = "Analytics";
+"reports.type.labor" = "Labor";
+"reports.type.equipment" = "Equipment";
+"reports.type.safety" = "Safety";
+"reports.type.safetyMeetings" = "Safety Me...";
+"reports.type.financial" = "Financial";
+"reports.type.project" = "Project";
+"reports.type.dailyLog" = "Daily Log";
+"reports.type.custom" = "Custom";
+"reports.recentReports" = "Recent Reports";
+"reports.clearAll" = "Clear All";
+"reports.noHistory" = "No Report History";
+"reports.generateReport" = "Generate Report";

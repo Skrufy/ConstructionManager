@@ -1,0 +1,83 @@
+# Project Queries for iOS
+
+query GetProjects($status: ProjectStatus, $search: String, $page: Int, $pageSize: Int) {
+  projects(status: $status, search: $search, page: $page, pageSize: $pageSize) {
+    edges {
+      node {
+        id
+        name
+        description
+        status
+        startDate
+        endDate
+        address {
+          street
+          city
+          state
+          zipCode
+          country
+          latitude
+          longitude
+          formatted
+        }
+        client {
+          id
+          companyName
+          contactName
+        }
+        dailyLogCount
+        documentCount
+        openIncidentCount
+        createdAt
+        updatedAt
+      }
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    totalCount
+  }
+}
+
+query GetProject($id: ID!) {
+  project(id: $id) {
+    id
+    name
+    description
+    status
+    startDate
+    endDate
+    address {
+      street
+      city
+      state
+      zipCode
+      country
+      latitude
+      longitude
+      formatted
+    }
+    client {
+      id
+      companyName
+      contactName
+      email
+      phone
+    }
+    team {
+      id
+      name
+      email
+      role
+      avatarUrl
+    }
+    dailyLogCount
+    documentCount
+    openIncidentCount
+    createdAt
+    updatedAt
+  }
+}

@@ -1,0 +1,55 @@
+# Daily Log Mutations for iOS
+
+mutation CreateDailyLog($input: CreateDailyLogInput!) {
+  createDailyLog(input: $input) {
+    id
+    date
+    status
+    notes
+    weatherDelay
+    project {
+      id
+      name
+    }
+    createdAt
+  }
+}
+
+mutation UpdateDailyLog($id: ID!, $input: UpdateDailyLogInput!) {
+  updateDailyLog(id: $id, input: $input) {
+    id
+    date
+    status
+    notes
+    weatherDelay
+    weatherDelayNotes
+    updatedAt
+  }
+}
+
+mutation SubmitDailyLog($id: ID!) {
+  submitDailyLog(id: $id) {
+    id
+    status
+    submittedAt
+  }
+}
+
+mutation ApproveDailyLog($id: ID!) {
+  approveDailyLog(id: $id) {
+    id
+    status
+    approvedAt
+    approver {
+      id
+      name
+    }
+  }
+}
+
+mutation RejectDailyLog($id: ID!, $reason: String!) {
+  rejectDailyLog(id: $id, reason: $reason) {
+    id
+    status
+  }
+}
