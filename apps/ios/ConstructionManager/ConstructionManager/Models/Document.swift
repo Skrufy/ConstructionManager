@@ -79,6 +79,7 @@ enum DocumentCategory: String, Codable, CaseIterable {
     case permit = "Permit"
     case report = "Report"
     case photo = "Photo"
+    case blasting = "Blasting"
     case other = "Other"
 
     var displayName: String {
@@ -90,6 +91,7 @@ enum DocumentCategory: String, Codable, CaseIterable {
         case .permit: return "documents.category.permit".localized
         case .report: return "documents.category.report".localized
         case .photo: return "documents.category.photo".localized
+        case .blasting: return "Blasting"
         case .other: return "documents.category.other".localized
         }
     }
@@ -103,6 +105,7 @@ enum DocumentCategory: String, Codable, CaseIterable {
         case .permit: return "doc.badge.plus"
         case .report: return "chart.bar.doc.horizontal"
         case .photo: return "photo"
+        case .blasting: return "hammer.fill"
         case .other: return "doc"
         }
     }
@@ -116,6 +119,7 @@ enum DocumentCategory: String, Codable, CaseIterable {
         case .permit: return AppColors.warning
         case .report: return .teal
         case .photo: return AppColors.orange
+        case .blasting: return AppColors.orange
         case .other: return AppColors.gray500
         }
     }

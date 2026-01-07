@@ -64,6 +64,7 @@ interface ApiService {
     @Query("category") category: String? = null,
     @Query("type") type: String? = null,
     @Query("search") search: String? = null,
+    @Query("blasterIds") blasterIds: String? = null,
     @Query("page") page: Int? = null,
     @Query("limit") limit: Int? = null
   ): DocumentsResponse
@@ -237,10 +238,11 @@ interface ApiService {
   @POST("files/upload")
   suspend fun uploadDocumentFile(
     @Part file: MultipartBody.Part,
-    @Part("projectId") projectId: RequestBody,
+    @Part("projectId") projectId: RequestBody?,
     @Part("name") name: RequestBody,
     @Part("type") type: RequestBody,
-    @Part("category") category: RequestBody
+    @Part("category") category: RequestBody,
+    @Part("blasterIds") blasterIds: RequestBody? = null
   ): FileUploadResponse
 
   @GET("users")
@@ -249,6 +251,9 @@ interface ApiService {
     @Query("role") role: String? = null,
     @Query("status") status: String? = null
   ): List<UserSummary>
+
+  @GET("users/blasters")
+  suspend fun getBlasters(): List<UserSummary>
 
   @POST("users")
   suspend fun createUser(@Body request: CreateUserRequest): UserSummary

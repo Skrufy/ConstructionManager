@@ -95,7 +95,7 @@ fun UsersScreen(
         }
     }
 
-    fun createUser(name: String, email: String, password: String, phone: String?, role: String, companyTemplateId: String?) {
+    fun createUser(name: String, email: String, password: String, phone: String?, role: String, isBlaster: Boolean, companyTemplateId: String?) {
         scope.launch {
             state = state.copy(saving = true, error = null)
             try {
@@ -108,6 +108,21 @@ fun UsersScreen(
                     status = "ACTIVE"
                 )
                 val createdUser = withContext(Dispatchers.IO) { apiService.createUser(request) }
+
+                // Update isBlaster field if needed
+                if (isBlaster) {
+                    withContext(Dispatchers.IO) {
+                        try {
+                            apiService.updateUser(
+                                createdUser.id,
+                                com.constructionpro.app.data.model.UpdateUserRequest(isBlaster = true)
+                            )
+                        } catch (e: Exception) {
+                            // Log but don't fail - user was created successfully
+                            e.printStackTrace()
+                        }
+                    }
+                }
 
                 // Assign company template if selected
                 if (companyTemplateId != null) {
@@ -221,9 +236,9 @@ fun UsersScreen(
                 showAddUserDialog = false
                 selectedUser = null
             },
-            onSave = { name, email, password, phone, role, companyTemplateId ->
+            onSave = { name, email, password, phone, role, isBlaster, companyTemplateId ->
                 if (isAdmin && selectedUser == null) {
-                    createUser(name, email, password, phone, role, companyTemplateId)
+                    createUser(name, email, password, phone, role, isBlaster, companyTemplateId)
                 } else if (selectedUser != null) {
                     // Viewing existing user - just close the dialog
                     showAddUserDialog = false
@@ -473,13 +488,14 @@ private fun UserEditDialog(
     saving: Boolean,
     companyTemplates: List<com.constructionpro.app.data.model.PermissionTemplate>,
     onDismiss: () -> Unit,
-    onSave: (name: String, email: String, password: String, phone: String?, role: String, companyTemplateId: String?) -> Unit
+    onSave: (name: String, email: String, password: String, phone: String?, role: String, isBlaster: Boolean, companyTemplateId: String?) -> Unit
 ) {
     var name by remember { mutableStateOf(user?.name ?: "") }
     var email by remember { mutableStateOf(user?.email ?: "") }
     var password by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf(user?.phone ?: "") }
     var selectedRole by remember { mutableStateOf(user?.role ?: "FIELD_WORKER") }
+    var isBlaster by remember { mutableStateOf(false) }
     var selectedTemplateId by remember { mutableStateOf<String?>(null) }
     var showRoleDropdown by remember { mutableStateOf(false) }
     var showTemplateDropdown by remember { mutableStateOf(false) }
@@ -729,6 +745,63 @@ private fun UserEditDialog(
                     }
                 }
 
+                // Special Certifications
+                if (user == null && isAdmin) {
+                    Column {
+                        Text(
+                            text = "Special Certifications",
+                            style = AppTypography.bodyBold,
+                            color = AppColors.textPrimary,
+                            modifier = Modifier.padding(bottom = AppSpacing.sm)
+                        )
+
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(AppSpacing.sm),
+                            color = ConstructionOrange.copy(alpha = 0.1f)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(AppSpacing.md),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Checkbox(
+                                    checked = isBlaster,
+                                    onCheckedChange = { isBlaster = it },
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = ConstructionOrange,
+                                        uncheckedColor = AppColors.textMuted
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(AppSpacing.sm))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.Engineering,
+                                            contentDescription = null,
+                                            tint = ConstructionOrange,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(AppSpacing.xxs))
+                                        Text(
+                                            text = "Certified Blaster",
+                                            style = AppTypography.bodyBold,
+                                            color = AppColors.textPrimary
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(AppSpacing.xxs))
+                                    Text(
+                                        text = "User can be assigned to blasting documents and will appear in the blaster dropdown on the documents page",
+                                        style = AppTypography.caption,
+                                        color = AppColors.textSecondary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Info Note
                 if (user == null && isAdmin) {
                     Surface(
@@ -788,7 +861,7 @@ private fun UserEditDialog(
             if (user == null && isAdmin) {
                 CPButton(
                     text = if (saving) "Creating..." else "Create User",
-                    onClick = { onSave(name, email, password, phone.takeIf { it.isNotBlank() }, selectedRole, selectedTemplateId) },
+                    onClick = { onSave(name, email, password, phone.takeIf { it.isNotBlank() }, selectedRole, isBlaster, selectedTemplateId) },
                     enabled = isFormValid && !saving,
                     size = CPButtonSize.Small,
                     icon = Icons.Default.PersonAdd

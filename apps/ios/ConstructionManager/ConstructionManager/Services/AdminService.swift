@@ -118,8 +118,24 @@ class AdminService: ObservableObject {
         }
     }
 
+    func updateUserIsBlaster(userId: String, isBlaster: Bool) async -> Bool {
+        do {
+            let body = UpdateIsBlasterRequest(isBlaster: isBlaster)
+            let _: User = try await apiClient.patch("/users/\(userId)", body: body)
+            await fetchUsers()
+            return true
+        } catch {
+            print("Failed to update user isBlaster: \(error)")
+            return false
+        }
+    }
+
     private struct UpdateStatusRequest: Encodable {
         let status: String
+    }
+
+    private struct UpdateIsBlasterRequest: Encodable {
+        let isBlaster: Bool
     }
 
     private struct CreateUserRequest: Encodable {

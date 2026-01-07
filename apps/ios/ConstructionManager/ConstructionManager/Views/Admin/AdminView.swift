@@ -1227,6 +1227,7 @@ struct UserDetailView: View {
     @StateObject private var adminService = AdminService.shared
     @State private var selectedRole: UserRole
     @State private var selectedStatus: UserStatus
+    @State private var isBlaster: Bool
     @State private var showingRolePicker = false
     @State private var showingStatusPicker = false
     @State private var showingDeactivateConfirm = false
@@ -1240,6 +1241,7 @@ struct UserDetailView: View {
         self.user = user
         _selectedRole = State(initialValue: user.role)
         _selectedStatus = State(initialValue: user.status)
+        _isBlaster = State(initialValue: user.isBlaster ?? false)
     }
 
     private var isAdmin: Bool {
@@ -1247,7 +1249,7 @@ struct UserDetailView: View {
     }
 
     private var hasChanges: Bool {
-        selectedRole != user.role || selectedStatus != user.status
+        selectedRole != user.role || selectedStatus != user.status || isBlaster != (user.isBlaster ?? false)
     }
 
     private var statusColor: Color {
@@ -1393,6 +1395,50 @@ struct UserDetailView: View {
                                 }
                             }
                             .background(AppColors.cardBackground)
+                            .cornerRadius(AppSpacing.radiusMedium)
+                            .padding(.horizontal, AppSpacing.md)
+                        }
+
+                        // Special Certifications Section
+                        VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                            Text("Special Certifications")
+                                .font(AppTypography.caption)
+                                .foregroundColor(AppColors.textSecondary)
+                                .textCase(.uppercase)
+                                .padding(.horizontal, AppSpacing.md)
+
+                            VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                                Toggle(isOn: $isBlaster) {
+                                    HStack(spacing: AppSpacing.sm) {
+                                        Image(systemName: "hammer.fill")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(AppColors.orange)
+
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Certified Blaster")
+                                                .font(AppTypography.bodySemibold)
+                                                .foregroundColor(AppColors.textPrimary)
+                                            Text("User can be assigned to blasting documents and will appear in the blaster dropdown on the documents page")
+                                                .font(AppTypography.caption)
+                                                .foregroundColor(AppColors.textSecondary)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
+                                    }
+                                }
+                                .tint(AppColors.orange)
+
+                                if isBlaster != (user.isBlaster ?? false) {
+                                    Text("admin.modified".localized)
+                                        .font(AppTypography.caption)
+                                        .foregroundColor(AppColors.warning)
+                                        .padding(.horizontal, AppSpacing.xs)
+                                        .padding(.vertical, 2)
+                                        .background(AppColors.warning.opacity(0.15))
+                                        .cornerRadius(4)
+                                }
+                            }
+                            .padding(AppSpacing.md)
+                            .background(AppColors.orange.opacity(0.1))
                             .cornerRadius(AppSpacing.radiusMedium)
                             .padding(.horizontal, AppSpacing.md)
                         }
@@ -1570,6 +1616,16 @@ struct UserDetailView: View {
             let success = await adminService.updateUserStatus(userId: user.id, status: selectedStatus)
             if !success {
                 errorMessage = "admin.failedToUpdateStatus".localized
+                isSaving = false
+                return
+            }
+        }
+
+        // Update isBlaster if changed
+        if isBlaster != (user.isBlaster ?? false) {
+            let success = await adminService.updateUserIsBlaster(userId: user.id, isBlaster: isBlaster)
+            if !success {
+                errorMessage = "Failed to update blaster certification"
                 isSaving = false
                 return
             }

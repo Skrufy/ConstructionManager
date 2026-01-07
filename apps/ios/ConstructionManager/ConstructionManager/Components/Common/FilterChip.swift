@@ -10,6 +10,7 @@ import SwiftUI
 struct FilterChip: View {
     let title: String
     let isSelected: Bool
+    var color: Color = AppColors.primary600
     let action: () -> Void
 
     var body: some View {
@@ -18,8 +19,8 @@ struct FilterChip: View {
                 .font(AppTypography.captionMedium)
                 .padding(.horizontal, AppSpacing.sm)
                 .padding(.vertical, AppSpacing.xs)
-                .foregroundColor(isSelected ? .white : AppColors.textSecondary)
-                .background(isSelected ? AppColors.primary600 : AppColors.gray100)
+                .foregroundColor(isSelected ? .white : (color == AppColors.primary600 ? AppColors.textSecondary : color))
+                .background(isSelected ? color : (color == AppColors.primary600 ? AppColors.gray100 : color.opacity(0.1)))
                 .cornerRadius(AppSpacing.radiusFull)
         }
     }

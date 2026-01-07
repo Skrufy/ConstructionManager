@@ -27,6 +27,7 @@ import com.constructionpro.app.data.local.toSummary
 import com.constructionpro.app.data.local.toEntity
 import com.constructionpro.app.data.model.DocumentProject
 import com.constructionpro.app.data.model.DocumentSummary
+import com.constructionpro.app.data.model.UserSummary
 import com.constructionpro.app.ui.components.*
 import com.constructionpro.app.ui.theme.*
 import kotlinx.coroutines.Dispatchers
@@ -49,7 +50,10 @@ private data class DocumentsState(
     val total: Int = 0,
     val categories: Map<String, Int> = emptyMap(),
     val offline: Boolean = false,
-    val selectedCategory: String? = null
+    val selectedCategory: String? = null,
+    val blasters: List<UserSummary> = emptyList(),
+    val selectedBlasterIds: Set<String> = emptySet(),
+    val loadingBlasters: Boolean = false
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,6 +75,12 @@ fun DocumentsScreen(
     var selectedDocumentType by remember { mutableStateOf<String?>(null) }
     var triggerReload by remember { mutableStateOf(0) }
 
+    // Upload configuration state
+    var uploadProjectId by remember { mutableStateOf<String?>(null) }
+    var uploadCategory by remember { mutableStateOf("DOCUMENTS") }
+    var uploadBlasterIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var projects by remember { mutableStateOf<List<DocumentProject>>(emptyList()) }
+
     // Localized strings for use in coroutines
     val loadFailedMsg = stringResource(R.string.documents_load_failed)
     val uploadFailedMsg = stringResource(R.string.documents_upload_failed)
@@ -78,14 +88,20 @@ fun DocumentsScreen(
     fun loadDocuments(
         targetPage: Int = state.page,
         query: String = searchQuery,
-        category: String? = state.selectedCategory
+        category: String? = state.selectedCategory,
+        blasterIds: Set<String> = state.selectedBlasterIds
     ) {
         scope.launch {
             state = state.copy(loading = true, error = null)
             try {
+                val blasterIdsParam = if (blasterIds.isNotEmpty()) {
+                    blasterIds.joinToString(",")
+                } else null
+
                 val response = withContext(Dispatchers.IO) {
                     apiService.getDocuments(
                         search = query.takeIf { it.isNotBlank() },
+                        blasterIds = blasterIdsParam,
                         page = targetPage,
                         limit = pageSize
                     )
@@ -149,6 +165,33 @@ fun DocumentsScreen(
         }
     }
 
+    fun loadBlasters() {
+        scope.launch {
+            state = state.copy(loadingBlasters = true)
+            try {
+                val blasters = withContext(Dispatchers.IO) {
+                    apiService.getBlasters()
+                }
+                state = state.copy(blasters = blasters, loadingBlasters = false)
+            } catch (e: Exception) {
+                state = state.copy(blasters = emptyList(), loadingBlasters = false)
+            }
+        }
+    }
+
+    fun loadProjects() {
+        scope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    apiService.getProjects()
+                }
+                projects = response.projects
+            } catch (e: Exception) {
+                // Ignore error, projects list will be empty
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         loadDocuments(1, searchQuery)
     }
@@ -161,6 +204,18 @@ fun DocumentsScreen(
     LaunchedEffect(triggerReload) {
         if (triggerReload > 0) {
             loadDocuments(1, searchQuery)
+        }
+    }
+
+    LaunchedEffect(state.selectedCategory) {
+        if (state.selectedCategory == "BLASTING" && state.blasters.isEmpty()) {
+            loadBlasters()
+        }
+    }
+
+    LaunchedEffect(state.selectedBlasterIds) {
+        if (state.selectedCategory == "BLASTING") {
+            loadDocuments(1, searchQuery, state.selectedCategory, state.selectedBlasterIds)
         }
     }
 
@@ -177,18 +232,23 @@ fun DocumentsScreen(
                         context = context,
                         apiService = apiService,
                         uri = it,
-                        documentType = selectedDocumentType ?: "DOCUMENT"
+                        projectId = uploadProjectId,
+                        category = uploadCategory,
+                        blasterIds = if (uploadCategory == "BLASTING") uploadBlasterIds.toList() else emptyList()
                     )
                     // Trigger reload
                     triggerReload++
                     uploadingFile = false
+                    // Reset upload state
+                    uploadProjectId = null
+                    uploadCategory = "DOCUMENTS"
+                    uploadBlasterIds = emptySet()
                 } catch (e: Exception) {
                     uploadError = e.message ?: uploadFailedMsg
                     uploadingFile = false
                 }
             }
         }
-        selectedDocumentType = null
     }
 
     var showUploadDialog by remember { mutableStateOf(false) }
@@ -273,8 +333,8 @@ fun DocumentsScreen(
                             selected = state.selectedCategory == category,
                             onClick = {
                                 val newCategory = if (state.selectedCategory == category) null else category
-                                state = state.copy(selectedCategory = newCategory)
-                                loadDocuments(1, searchQuery, newCategory)
+                                state = state.copy(selectedCategory = newCategory, selectedBlasterIds = emptySet())
+                                loadDocuments(1, searchQuery, newCategory, emptySet())
                             },
                             label = { Text("$category ($count)") },
                             colors = FilterChipDefaults.filterChipColors(
@@ -282,6 +342,107 @@ fun DocumentsScreen(
                                 selectedLabelColor = androidx.compose.ui.graphics.Color.White
                             )
                         )
+                    }
+                }
+            }
+
+            // Blaster Filter (shown only for BLASTING category)
+            if (state.selectedCategory == "BLASTING") {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = AppSpacing.md, vertical = AppSpacing.sm),
+                    shape = RoundedCornerShape(AppSpacing.sm),
+                    color = ConstructionOrange.copy(alpha = 0.1f)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(AppSpacing.md)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(bottom = AppSpacing.sm)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Engineering,
+                                contentDescription = null,
+                                tint = ConstructionOrange,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(AppSpacing.xs))
+                            Text(
+                                text = "Blasters:",
+                                style = AppTypography.bodyBold,
+                                color = AppColors.textPrimary
+                            )
+                            Spacer(modifier = Modifier.width(AppSpacing.xs))
+                            Text(
+                                text = "(${state.selectedBlasterIds.size} selected)",
+                                style = AppTypography.caption,
+                                color = AppColors.textSecondary
+                            )
+                        }
+
+                        if (state.loadingBlasters) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(AppSpacing.md),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = ConstructionOrange
+                                )
+                            }
+                        } else if (state.blasters.isEmpty()) {
+                            Text(
+                                text = "No blasters found. Mark users as \"Certified Blaster\" in Admin Users.",
+                                style = AppTypography.caption,
+                                color = AppColors.textSecondary,
+                                modifier = Modifier.padding(vertical = AppSpacing.sm)
+                            )
+                        } else {
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)
+                            ) {
+                                item {
+                                    FilterChip(
+                                        selected = state.selectedBlasterIds.isEmpty(),
+                                        onClick = {
+                                            state = state.copy(selectedBlasterIds = emptySet())
+                                        },
+                                        label = { Text("All Blasters") },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = ConstructionOrange,
+                                            selectedLabelColor = androidx.compose.ui.graphics.Color.White,
+                                            containerColor = ConstructionOrange.copy(alpha = 0.2f),
+                                            labelColor = ConstructionOrange
+                                        )
+                                    )
+                                }
+                                items(state.blasters) { blaster ->
+                                    val isSelected = state.selectedBlasterIds.contains(blaster.id)
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = {
+                                            val newSelected = if (isSelected) {
+                                                state.selectedBlasterIds - blaster.id
+                                            } else {
+                                                state.selectedBlasterIds + blaster.id
+                                            }
+                                            state = state.copy(selectedBlasterIds = newSelected)
+                                        },
+                                        label = { Text(blaster.name) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = ConstructionOrange,
+                                            selectedLabelColor = androidx.compose.ui.graphics.Color.White,
+                                            containerColor = ConstructionOrange.copy(alpha = 0.2f),
+                                            labelColor = ConstructionOrange
+                                        )
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -432,63 +593,281 @@ fun DocumentsScreen(
 
     // Upload Document Dialog
     if (showUploadDialog) {
-        AlertDialog(
-            onDismissRequest = { showUploadDialog = false },
-            title = { Text(stringResource(R.string.documents_upload)) },
-            text = {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
-                ) {
-                    Text(
-                        stringResource(R.string.documents_upload_type),
-                        style = AppTypography.body
-                    )
+        LaunchedEffect(Unit) {
+            loadProjects()
+            if (uploadCategory == "BLASTING" && state.blasters.isEmpty()) {
+                loadBlasters()
+            }
+        }
 
-                    Button(
-                        onClick = {
-                            selectedDocumentType = "DOCUMENT"
-                            showUploadDialog = false
-                            filePickerLauncher.launch("*/*")
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = AppColors.primary600
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Description,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(AppSpacing.xs))
-                        Text(stringResource(R.string.documents_general))
+        AlertDialog(
+            onDismissRequest = {
+                showUploadDialog = false
+                uploadProjectId = null
+                uploadCategory = "DOCUMENTS"
+                uploadBlasterIds = emptySet()
+            },
+            title = { Text("Upload Document") },
+            text = {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 500.dp),
+                    verticalArrangement = Arrangement.spacedBy(AppSpacing.md)
+                ) {
+                    // Project Selector
+                    item {
+                        Column {
+                            Text(
+                                "Upload to Project *",
+                                style = AppTypography.bodyBold,
+                                color = AppColors.textPrimary
+                            )
+                            Spacer(modifier = Modifier.height(AppSpacing.xs))
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(AppSpacing.xs),
+                                color = AppColors.gray100
+                            ) {
+                                Column {
+                                    // Company-wide option
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                uploadProjectId = null
+                                            }
+                                            .padding(AppSpacing.md),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        RadioButton(
+                                            selected = uploadProjectId == null,
+                                            onClick = { uploadProjectId = null }
+                                        )
+                                        Spacer(modifier = Modifier.width(AppSpacing.sm))
+                                        Column {
+                                            Text(
+                                                "📋 Not Project Specific (Company-wide)",
+                                                style = AppTypography.body,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+
+                                    Divider()
+
+                                    // Project list
+                                    projects.forEach { project ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    uploadProjectId = project.id
+                                                }
+                                                .padding(AppSpacing.md),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            RadioButton(
+                                                selected = uploadProjectId == project.id,
+                                                onClick = { uploadProjectId = project.id }
+                                            )
+                                            Spacer(modifier = Modifier.width(AppSpacing.sm))
+                                            Text(project.name, style = AppTypography.body)
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
 
-                    Button(
-                        onClick = {
-                            selectedDocumentType = "COMPLIANCE"
-                            showUploadDialog = false
-                            filePickerLauncher.launch("*/*")
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = ConstructionGreen
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.VerifiedUser,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(AppSpacing.xs))
-                        Text(stringResource(R.string.documents_compliance))
+                    // Category Selector
+                    item {
+                        Column {
+                            Text(
+                                "Category *",
+                                style = AppTypography.bodyBold,
+                                color = AppColors.textPrimary
+                            )
+                            Spacer(modifier = Modifier.height(AppSpacing.xs))
+                            val categories = listOf(
+                                "DOCUMENTS" to "General Documents",
+                                "COMPLIANCE" to "Compliance",
+                                "SAFETY" to "Safety",
+                                "BLASTING" to "Blasting (Restricted)"
+                            )
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(AppSpacing.xs),
+                                color = AppColors.gray100
+                            ) {
+                                Column {
+                                    categories.forEach { (value, label) ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    uploadCategory = value
+                                                    if (value == "BLASTING" && state.blasters.isEmpty()) {
+                                                        loadBlasters()
+                                                    }
+                                                    if (value != "BLASTING") {
+                                                        uploadBlasterIds = emptySet()
+                                                    }
+                                                }
+                                                .padding(AppSpacing.md),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            RadioButton(
+                                                selected = uploadCategory == value,
+                                                onClick = {
+                                                    uploadCategory = value
+                                                    if (value == "BLASTING" && state.blasters.isEmpty()) {
+                                                        loadBlasters()
+                                                    }
+                                                    if (value != "BLASTING") {
+                                                        uploadBlasterIds = emptySet()
+                                                    }
+                                                }
+                                            )
+                                            Spacer(modifier = Modifier.width(AppSpacing.sm))
+                                            Text(label, style = AppTypography.body)
+                                        }
+                                        if (value != categories.last().first) {
+                                            Divider()
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Blaster Selection (shown only for BLASTING category)
+                    if (uploadCategory == "BLASTING") {
+                        item {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(AppSpacing.sm),
+                                color = ConstructionOrange.copy(alpha = 0.1f)
+                            ) {
+                                Column(modifier = Modifier.padding(AppSpacing.md)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(bottom = AppSpacing.sm)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Engineering,
+                                            contentDescription = null,
+                                            tint = ConstructionOrange,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(AppSpacing.xs))
+                                        Text(
+                                            text = "Assign Blasters *",
+                                            style = AppTypography.bodyBold,
+                                            color = ConstructionOrange
+                                        )
+                                    }
+
+                                    Text(
+                                        text = "Only ADMINS and selected blasters will be able to view this document",
+                                        style = AppTypography.caption,
+                                        color = AppColors.textSecondary,
+                                        modifier = Modifier.padding(bottom = AppSpacing.sm)
+                                    )
+
+                                    if (state.loadingBlasters) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(AppSpacing.md),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(24.dp),
+                                                color = ConstructionOrange
+                                            )
+                                        }
+                                    } else if (state.blasters.isEmpty()) {
+                                        Text(
+                                            text = "No blasters found. Mark users as \"Certified Blaster\" in Admin Users.",
+                                            style = AppTypography.caption,
+                                            color = AppColors.textSecondary
+                                        )
+                                    } else {
+                                        state.blasters.forEach { blaster ->
+                                            val isSelected = uploadBlasterIds.contains(blaster.id)
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable {
+                                                        uploadBlasterIds = if (isSelected) {
+                                                            uploadBlasterIds - blaster.id
+                                                        } else {
+                                                            uploadBlasterIds + blaster.id
+                                                        }
+                                                    }
+                                                    .padding(vertical = AppSpacing.xs),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Checkbox(
+                                                    checked = isSelected,
+                                                    onCheckedChange = {
+                                                        uploadBlasterIds = if (it) {
+                                                            uploadBlasterIds + blaster.id
+                                                        } else {
+                                                            uploadBlasterIds - blaster.id
+                                                        }
+                                                    },
+                                                    colors = CheckboxDefaults.colors(
+                                                        checkedColor = ConstructionOrange
+                                                    )
+                                                )
+                                                Spacer(modifier = Modifier.width(AppSpacing.sm))
+                                                Column {
+                                                    Text(
+                                                        blaster.name,
+                                                        style = AppTypography.body
+                                                    )
+                                                    Text(
+                                                        blaster.email,
+                                                        style = AppTypography.caption,
+                                                        color = AppColors.textSecondary
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showUploadDialog = false }) {
-                    Text(stringResource(R.string.common_cancel))
+                val canUpload = uploadProjectId != null || uploadProjectId == null // Allow null for company-wide
+                val needsBlasters = uploadCategory == "BLASTING" && uploadBlasterIds.isEmpty()
+
+                Button(
+                    onClick = {
+                        showUploadDialog = false
+                        filePickerLauncher.launch("*/*")
+                    },
+                    enabled = !needsBlasters,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AppColors.primary600
+                    )
+                ) {
+                    Text("Upload")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showUploadDialog = false
+                    uploadProjectId = null
+                    uploadCategory = "DOCUMENTS"
+                    uploadBlasterIds = emptySet()
+                }) {
+                    Text("Cancel")
                 }
             }
         )
@@ -502,7 +881,9 @@ private suspend fun uploadFile(
     context: Context,
     apiService: ApiService,
     uri: Uri,
-    documentType: String
+    projectId: String?,
+    category: String,
+    blasterIds: List<String>
 ): Unit = withContext(Dispatchers.IO) {
     // Get file name from URI
     val fileName = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
@@ -531,11 +912,13 @@ private suspend fun uploadFile(
         )
 
         // Create request body parts for form fields
-        val projectIdPart = "default".toRequestBody("text/plain".toMediaTypeOrNull())
+        val projectIdPart = projectId?.toRequestBody("text/plain".toMediaTypeOrNull())
         val namePart = fileName.toRequestBody("text/plain".toMediaTypeOrNull())
-        val typePart = documentType.toRequestBody("text/plain".toMediaTypeOrNull())
-        val categoryPart = (if (documentType == "COMPLIANCE") "COMPLIANCE" else "DOCUMENTS")
-            .toRequestBody("text/plain".toMediaTypeOrNull())
+        val typePart = "document".toRequestBody("text/plain".toMediaTypeOrNull())
+        val categoryPart = category.toRequestBody("text/plain".toMediaTypeOrNull())
+        val blasterIdsPart = if (blasterIds.isNotEmpty()) {
+            com.google.gson.Gson().toJson(blasterIds).toRequestBody("application/json".toMediaTypeOrNull())
+        } else null
 
         // Upload to server
         apiService.uploadDocumentFile(
@@ -543,7 +926,8 @@ private suspend fun uploadFile(
             projectId = projectIdPart,
             name = namePart,
             type = typePart,
-            category = categoryPart
+            category = categoryPart,
+            blasterIds = blasterIdsPart
         )
     } finally {
         // Clean up temp file

@@ -30,6 +30,7 @@ data class DocumentSummary(
   val createdAt: String? = null,
   val project: DocumentProject? = null,
   val uploader: DocumentUser? = null,
+  val blasters: List<DocumentUser> = emptyList(),
   val metadata: DocumentMetadata? = null,
   val revisions: List<DocumentRevision> = emptyList(),
   @SerialName("_count") val count: DocumentCount? = null
@@ -45,7 +46,8 @@ data class DocumentProject(
 @Serializable
 data class DocumentUser(
   val id: String? = null,
-  val name: String? = null
+  val name: String? = null,
+  val email: String? = null
 )
 
 @Serializable

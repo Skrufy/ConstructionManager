@@ -14,7 +14,9 @@ class DocumentService: ObservableObject {
     static let shared = DocumentService()
 
     @Published var documents: [Document] = []
+    @Published var blasters: [User] = []
     @Published var isLoading = false
+    @Published var isLoadingBlasters = false
     @Published var isUploading = false
     @Published var uploadProgress: Double = 0
     @Published var error: String?
@@ -30,9 +32,9 @@ class DocumentService: ObservableObject {
 
     // MARK: - Fetch Documents
 
-    func fetchDocuments(projectId: String? = nil, category: String? = nil, search: String? = nil, force: Bool = false) async {
+    func fetchDocuments(projectId: String? = nil, category: String? = nil, search: String? = nil, blasterIds: [String]? = nil, force: Bool = false) async {
         // Skip if we just fetched recently (unless forced or filters changed)
-        let hasFilters = projectId != nil || category != nil || (search != nil && !search!.isEmpty)
+        let hasFilters = projectId != nil || category != nil || (search != nil && !search!.isEmpty) || (blasterIds != nil && !blasterIds!.isEmpty)
         if !force && !hasFilters, let lastFetch = lastFetchTime, Date().timeIntervalSince(lastFetch) < minFetchInterval {
             print("[DocumentService] Skipping fetch - too soon since last fetch")
             return
@@ -47,7 +49,7 @@ class DocumentService: ObservableObject {
 
         // Create a new fetch task
         let task = Task {
-            await performFetch(projectId: projectId, category: category, search: search)
+            await performFetch(projectId: projectId, category: category, search: search, blasterIds: blasterIds)
         }
 
         if !hasFilters {
@@ -61,7 +63,7 @@ class DocumentService: ObservableObject {
         }
     }
 
-    private func performFetch(projectId: String?, category: String?, search: String?) async {
+    private func performFetch(projectId: String?, category: String?, search: String?, blasterIds: [String]?) async {
         isLoading = true
         error = nil
         defer { isLoading = false }
@@ -77,6 +79,9 @@ class DocumentService: ObservableObject {
             if let search = search, !search.isEmpty {
                 queryItems.append(URLQueryItem(name: "search", value: search))
             }
+            if let blasterIds = blasterIds, !blasterIds.isEmpty {
+                queryItems.append(URLQueryItem(name: "blasterIds", value: blasterIds.joined(separator: ",")))
+            }
 
             let response: DocumentsAPIResponse = try await apiClient.get(
                 "/documents",
@@ -91,6 +96,20 @@ class DocumentService: ObservableObject {
         }
     }
 
+    // MARK: - Fetch Blasters
+
+    func fetchBlasters() async {
+        isLoadingBlasters = true
+        defer { isLoadingBlasters = false }
+
+        do {
+            let blasters: [User] = try await apiClient.get("/users/blasters")
+            self.blasters = blasters
+        } catch {
+            print("Failed to fetch blasters: \(error)")
+        }
+    }
+
     // MARK: - Refresh
 
     func refresh() async {
@@ -102,13 +121,14 @@ class DocumentService: ObservableObject {
     /// Upload a document to the server
     /// Note: This creates the document record after the file has been uploaded to storage
     func uploadDocument(
-        projectId: String,
+        projectId: String?,
         name: String,
         fileData: Data,
         fileType: String,
         category: DocumentCategory,
         description: String? = nil,
-        tags: [String]? = nil
+        tags: [String]? = nil,
+        blasterIds: [String]? = nil
     ) async throws -> Document {
         isUploading = true
         uploadProgress = 0
@@ -119,10 +139,11 @@ class DocumentService: ObservableObject {
 
         // First, upload the file to Supabase storage
         // The storage path will be returned from the upload
+        // For company-wide documents (nil projectId), use "company-wide" folder
         let storagePath = try await uploadFileToStorage(
             data: fileData,
             fileName: name,
-            projectId: projectId
+            projectId: projectId ?? "company-wide"
         )
 
         uploadProgress = 0.7
@@ -135,7 +156,8 @@ class DocumentService: ObservableObject {
             storagePath: storagePath,
             category: category.rawValue.uppercased(),
             description: description,
-            tags: tags
+            tags: tags,
+            blasterIds: blasterIds
         )
 
         let response: DocumentCreateResponse = try await apiClient.post("/documents", body: request)
@@ -151,11 +173,12 @@ class DocumentService: ObservableObject {
 
     /// Upload image as document
     func uploadImage(
-        projectId: String,
+        projectId: String?,
         image: UIImage,
         name: String,
         category: DocumentCategory = .photo,
-        description: String? = nil
+        description: String? = nil,
+        blasterIds: [String]? = nil
     ) async throws -> Document {
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
             throw DocumentUploadError.invalidImageData
@@ -167,7 +190,8 @@ class DocumentService: ObservableObject {
             fileData: imageData,
             fileType: "image",
             category: category,
-            description: description
+            description: description,
+            blasterIds: blasterIds
         )
     }
 
@@ -297,13 +321,14 @@ enum DocumentUploadError: LocalizedError {
 // MARK: - Request Models
 
 struct CreateDocumentRequest: Encodable {
-    let projectId: String
+    let projectId: String?
     let name: String
     let type: String
     let storagePath: String
     let category: String?
     let description: String?
     let tags: [String]?
+    let blasterIds: [String]?
 }
 
 struct UpdateDocumentRequest: Encodable {
@@ -356,6 +381,7 @@ struct DocumentAPIModel: Decodable {
     let uploadedBy: String?
     let project: ProjectRef?
     let uploadedByUser: UserRef?
+    let blasters: [UserRef]?
 
     struct ProjectRef: Decodable {
         let id: String
@@ -365,6 +391,7 @@ struct DocumentAPIModel: Decodable {
     struct UserRef: Decodable {
         let id: String
         let name: String
+        let email: String?
     }
 
     func toDocument() -> Document {
@@ -377,6 +404,7 @@ struct DocumentAPIModel: Decodable {
         case "PERMIT", "PERMITS": mappedCategory = .permit
         case "REPORT", "REPORTS": mappedCategory = .report
         case "PHOTO", "PHOTOS": mappedCategory = .photo
+        case "BLASTING": mappedCategory = .blasting
         case "DRAWINGS": mappedCategory = .other // Drawings handled separately
         default: mappedCategory = .other
         }

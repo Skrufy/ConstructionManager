@@ -11,6 +11,7 @@ import Combine
 
 struct DocumentsView: View {
     @StateObject private var viewModel = DocumentsViewModel()
+    @StateObject private var documentService = DocumentService.shared
     @StateObject private var projectService = ProjectService.shared
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var deepLinkManager: DeepLinkManager
@@ -18,6 +19,7 @@ struct DocumentsView: View {
     @State private var searchText = ""
     @State private var selectedCategory: DocumentCategory?
     @State private var selectedProjectId: String?
+    @State private var selectedBlasterIds: Set<String> = []
     @State private var showingUpload = false
     @State private var selectedDocument: Document?
 
@@ -50,6 +52,11 @@ struct DocumentsView: View {
 
                 // Category Filter
                 categoryFilter
+
+                // Blaster Filter (shown only for BLASTING category)
+                if selectedCategory == .blasting {
+                    blasterFilter
+                }
 
                 // Expiration Alerts
                 if !viewModel.expiringDocuments.isEmpty {
@@ -120,6 +127,12 @@ struct DocumentsView: View {
                    let document = viewModel.documents.first(where: { $0.id == documentId }) {
                     selectedDocument = document
                     deepLinkManager.clearActiveLinks()
+                }
+            }
+            .onChange(of: selectedCategory) { _, newCategory in
+                // Clear blaster selection when switching away from BLASTING category
+                if newCategory != .blasting {
+                    selectedBlasterIds = []
                 }
             }
             .onAppear {
@@ -197,6 +210,76 @@ struct DocumentsView: View {
             }
             .padding(.horizontal, AppSpacing.md)
             .padding(.vertical, AppSpacing.xs)
+        }
+    }
+
+    private var blasterFilter: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.xs) {
+            HStack(spacing: AppSpacing.xs) {
+                Image(systemName: "hammer.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.orange)
+                Text("Blasters:")
+                    .font(AppTypography.bodyBold)
+                Text("(\(selectedBlasterIds.count) selected)")
+                    .font(AppTypography.caption)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            .padding(.horizontal, AppSpacing.md)
+
+            if documentService.isLoadingBlasters {
+                ProgressView()
+                    .padding()
+            } else if documentService.blasters.isEmpty {
+                Text("No blasters found. Mark users as \"Certified Blaster\" in Admin Users.")
+                    .font(AppTypography.caption)
+                    .foregroundColor(AppColors.textSecondary)
+                    .padding(.horizontal, AppSpacing.md)
+                    .padding(.vertical, AppSpacing.sm)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: AppSpacing.xs) {
+                        FilterChip(
+                            title: "All Blasters",
+                            isSelected: selectedBlasterIds.isEmpty
+                        ) {
+                            selectedBlasterIds = []
+                        }
+
+                        ForEach(documentService.blasters) { blaster in
+                            FilterChip(
+                                title: blaster.name,
+                                isSelected: selectedBlasterIds.contains(blaster.id),
+                                color: AppColors.orange
+                            ) {
+                                if selectedBlasterIds.contains(blaster.id) {
+                                    selectedBlasterIds.remove(blaster.id)
+                                } else {
+                                    selectedBlasterIds.insert(blaster.id)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, AppSpacing.md)
+                    .padding(.vertical, AppSpacing.xs)
+                }
+            }
+        }
+        .padding(.vertical, AppSpacing.xs)
+        .background(AppColors.orange.opacity(0.1))
+        .task {
+            if documentService.blasters.isEmpty {
+                await documentService.fetchBlasters()
+            }
+        }
+        .onChange(of: selectedBlasterIds) { _, newValue in
+            Task {
+                await viewModel.fetchDocuments(
+                    projectId: selectedProjectId,
+                    category: selectedCategory?.rawValue,
+                    blasterIds: newValue.isEmpty ? nil : Array(newValue)
+                )
+            }
         }
     }
 
@@ -358,15 +441,32 @@ struct ShareSheet: UIViewControllerRepresentable {
 struct DocumentUploadView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var projectService = ProjectService.shared
+    @StateObject private var documentService = DocumentService.shared
     @State private var name = ""
     @State private var selectedCategory: DocumentCategory = .other
-    @State private var selectedProjectId: String = ""
+    @State private var selectedProjectId: String? = nil
     @State private var description = ""
     @State private var hasExpiration = false
     @State private var expirationDate = Date()
+    @State private var selectedBlasterIds: Set<String> = []
+    @State private var showImagePicker = false
+    @State private var selectedImage: UIImage?
+    @State private var errorMessage: String?
+    @State private var isUploading = false
 
     private var activeProjects: [Project] {
         projectService.projects.filter { $0.status == .active }
+    }
+
+    private var canUpload: Bool {
+        // Must have a name and selected image
+        guard !name.isEmpty, selectedImage != nil else { return false }
+
+        // If BLASTING category, must have at least one blaster selected
+        if selectedCategory == .blasting {
+            return !selectedBlasterIds.isEmpty
+        }
+        return true
     }
 
     var body: some View {
@@ -374,39 +474,71 @@ struct DocumentUploadView: View {
             ScrollView {
                 VStack(spacing: AppSpacing.lg) {
                     // File Selection
-                    ZStack {
-                        RoundedRectangle(cornerRadius: AppSpacing.radiusLarge)
-                            .stroke(style: StrokeStyle(lineWidth: 2, dash: [8]))
-                            .foregroundColor(AppColors.gray300)
-                            .frame(height: 150)
+                    Button {
+                        showImagePicker = true
+                    } label: {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: AppSpacing.radiusLarge)
+                                .stroke(style: StrokeStyle(lineWidth: 2, dash: [8]))
+                                .foregroundColor(selectedImage != nil ? AppColors.success : AppColors.gray300)
+                                .frame(height: 150)
 
-                        VStack(spacing: AppSpacing.sm) {
-                            Image(systemName: "doc.badge.plus")
-                                .font(.system(size: 40))
-                                .foregroundColor(AppColors.primary600)
-                            Text("documents.tapToSelect".localized)
-                                .font(AppTypography.secondary)
-                                .foregroundColor(AppColors.textSecondary)
+                            if let selectedImage = selectedImage {
+                                VStack(spacing: AppSpacing.sm) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(AppColors.success)
+                                    Text("Image Selected")
+                                        .font(AppTypography.secondary)
+                                        .foregroundColor(AppColors.success)
+                                }
+                            } else {
+                                VStack(spacing: AppSpacing.sm) {
+                                    Image(systemName: "doc.badge.plus")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(AppColors.primary600)
+                                    Text("documents.tapToSelect".localized)
+                                        .font(AppTypography.secondary)
+                                        .foregroundColor(AppColors.textSecondary)
+                                }
+                            }
                         }
+                    }
+                    .buttonStyle(.plain)
+                    .sheet(isPresented: $showImagePicker) {
+                        ImagePicker(image: $selectedImage)
+                    }
+
+                    // Error message
+                    if let errorMessage = errorMessage {
+                        HStack(spacing: AppSpacing.xs) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(AppColors.error)
+                            Text(errorMessage)
+                                .font(AppTypography.caption)
+                                .foregroundColor(AppColors.error)
+                        }
+                        .padding(AppSpacing.sm)
+                        .background(AppColors.error.opacity(0.1))
+                        .cornerRadius(AppSpacing.radiusSmall)
                     }
 
                     // Form
                     VStack(spacing: AppSpacing.md) {
                         AppTextField(label: "Document Name", placeholder: "e.g., Contractor License", text: $name, isRequired: true)
 
-                        // Jobsite Picker (optional)
+                        // Project Picker (required)
                         VStack(alignment: .leading, spacing: AppSpacing.xs) {
                             HStack {
-                                Text("documents.jobsite".localized)
+                                Text("Upload to Project")
                                     .font(AppTypography.label)
-                                Text("(\("common.optional".localized))")
-                                    .font(AppTypography.caption)
-                                    .foregroundColor(AppColors.textTertiary)
+                                Text("*")
+                                    .foregroundColor(.red)
                             }
-                            Picker("documents.jobsite".localized, selection: $selectedProjectId) {
-                                Text("documents.noneGeneral".localized).tag("")
+                            Picker("Upload to Project", selection: $selectedProjectId) {
+                                Text("📋 Not Project Specific (Company-wide)").tag(nil as String?)
                                 ForEach(activeProjects) { project in
-                                    Text(project.name).tag(project.id)
+                                    Text(project.name).tag(project.id as String?)
                                 }
                             }
                             .pickerStyle(.menu)
@@ -415,15 +547,75 @@ struct DocumentUploadView: View {
 
                         // Category Picker
                         VStack(alignment: .leading, spacing: AppSpacing.xs) {
-                            Text("documents.category".localized)
-                                .font(AppTypography.label)
+                            HStack {
+                                Text("documents.category".localized)
+                                    .font(AppTypography.label)
+                                Text("*")
+                                    .foregroundColor(.red)
+                            }
                             Picker("documents.category".localized, selection: $selectedCategory) {
                                 ForEach(DocumentCategory.allCases, id: \.self) { cat in
-                                    Text(cat.rawValue).tag(cat)
+                                    Text(cat.displayName).tag(cat)
                                 }
                             }
                             .pickerStyle(.menu)
                             .tint(AppColors.textPrimary)
+                            .onChange(of: selectedCategory) { newValue in
+                                if newValue == .blasting && documentService.blasters.isEmpty {
+                                    Task {
+                                        await documentService.fetchBlasters()
+                                    }
+                                }
+                                if newValue != .blasting {
+                                    selectedBlasterIds = []
+                                }
+                            }
+                        }
+
+                        // Blaster Selection (shown only for BLASTING category)
+                        if selectedCategory == .blasting {
+                            VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                                HStack {
+                                    Image(systemName: "hammer.fill")
+                                        .foregroundColor(AppColors.orange)
+                                    Text("Assign Blasters")
+                                        .font(AppTypography.bodyBold)
+                                    Text("*")
+                                        .foregroundColor(.red)
+                                }
+
+                                Text("Only ADMINS and selected blasters will be able to view this document")
+                                    .font(AppTypography.caption)
+                                    .foregroundColor(AppColors.textSecondary)
+
+                                if documentService.isLoadingBlasters {
+                                    ProgressView()
+                                        .padding()
+                                } else if documentService.blasters.isEmpty {
+                                    Text("No blasters found. Mark users as \"Certified Blaster\" in Admin Users.")
+                                        .font(AppTypography.caption)
+                                        .foregroundColor(AppColors.textSecondary)
+                                        .padding()
+                                } else {
+                                    VStack(spacing: AppSpacing.sm) {
+                                        ForEach(documentService.blasters) { blaster in
+                                            BlasterSelectionRow(
+                                                blaster: blaster,
+                                                isSelected: selectedBlasterIds.contains(blaster.id)
+                                            ) {
+                                                if selectedBlasterIds.contains(blaster.id) {
+                                                    selectedBlasterIds.remove(blaster.id)
+                                                } else {
+                                                    selectedBlasterIds.insert(blaster.id)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(AppSpacing.md)
+                            .background(AppColors.orange.opacity(0.1))
+                            .cornerRadius(AppSpacing.radiusMedium)
                         }
 
                         AppTextArea(label: "Description", placeholder: "Optional description...", text: $description)
@@ -443,8 +635,22 @@ struct DocumentUploadView: View {
                         }
                     }
 
-                    PrimaryButton("documents.upload".localized, icon: "arrow.up.circle.fill") {
-                        dismiss()
+                    if isUploading {
+                        VStack(spacing: AppSpacing.sm) {
+                            ProgressView()
+                            Text("Uploading...")
+                                .font(AppTypography.secondary)
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                        .padding()
+                    } else {
+                        PrimaryButton("documents.upload".localized, icon: "arrow.up.circle.fill") {
+                            Task {
+                                await uploadDocument()
+                            }
+                        }
+                        .disabled(!canUpload)
+                        .opacity(canUpload ? 1.0 : 0.5)
                     }
                 }
                 .padding(AppSpacing.md)
@@ -461,6 +667,61 @@ struct DocumentUploadView: View {
                 }
             }
         }
+    }
+
+    private func uploadDocument() async {
+        guard let selectedImage = selectedImage else { return }
+
+        isUploading = true
+        errorMessage = nil
+
+        do {
+            _ = try await documentService.uploadImage(
+                projectId: selectedProjectId,
+                image: selectedImage,
+                name: name,
+                category: selectedCategory,
+                description: description.isEmpty ? nil : description,
+                blasterIds: selectedBlasterIds.isEmpty ? nil : Array(selectedBlasterIds)
+            )
+
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+            isUploading = false
+        }
+    }
+}
+
+// MARK: - Blaster Selection Row
+struct BlasterSelectionRow: View {
+    let blaster: User
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: AppSpacing.sm) {
+                Image(systemName: isSelected ? "checkmark.square.fill" : "square")
+                    .foregroundColor(isSelected ? AppColors.orange : AppColors.gray400)
+                    .font(.system(size: 20))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(blaster.name)
+                        .font(AppTypography.body)
+                        .foregroundColor(AppColors.textPrimary)
+                    Text(blaster.email)
+                        .font(AppTypography.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                Spacer()
+            }
+            .padding(AppSpacing.sm)
+            .background(AppColors.surface)
+            .cornerRadius(AppSpacing.radiusSmall)
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -674,11 +935,15 @@ class DocumentsViewModel: ObservableObject {
         documents.filter { $0.isExpiringSoon || $0.isExpired }
     }
 
-    func fetchDocuments(projectId: String? = nil, category: String? = nil) async {
+    func fetchDocuments(projectId: String? = nil, category: String? = nil, blasterIds: [String]? = nil) async {
         isLoading = true
         defer { isLoading = false }
 
-        await documentService.fetchDocuments(projectId: projectId, category: category)
+        await documentService.fetchDocuments(
+            projectId: projectId,
+            category: category,
+            blasterIds: blasterIds
+        )
 
         if !documentService.documents.isEmpty {
             documents = documentService.documents
@@ -711,6 +976,44 @@ class DocumentsViewModel: ObservableObject {
         }
 
         return result
+    }
+}
+
+// MARK: - Image Picker
+struct ImagePicker: UIViewControllerRepresentable {
+    @Binding var image: UIImage?
+    @Environment(\.dismiss) private var dismiss
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .photoLibrary
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImagePicker
+
+        init(_ parent: ImagePicker) {
+            self.parent = parent
+        }
+
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                parent.image = image
+            }
+            parent.dismiss()
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
+        }
     }
 }
 
