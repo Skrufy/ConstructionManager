@@ -78,6 +78,7 @@ struct UserProfile: Decodable {
     let isBlaster: Bool?
     let createdAt: Date
     let language: String?
+    let companyTemplateName: String?
 }
 
 // MARK: - Auth Service
@@ -188,7 +189,8 @@ class AuthService: ObservableObject {
                 status: UserStatus(rawValue: profile.status) ?? .active,
                 isBlaster: profile.isBlaster,
                 createdAt: profile.createdAt,
-                language: profile.language
+                language: profile.language,
+                companyTemplateName: profile.companyTemplateName
             )
         } catch {
             print("Failed to load user profile: \(error)")
