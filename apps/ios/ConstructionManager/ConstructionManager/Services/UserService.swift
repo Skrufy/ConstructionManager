@@ -88,9 +88,7 @@ class UserService: ObservableObject {
         defer { isLoading = false }
 
         do {
-            let body: [String: Any?] = [
-                "company_template_id": templateId
-            ]
+            let body = AssignTemplateRequest(companyTemplateId: templateId)
             let _: User = try await apiClient.patch("/users/\(userId)", body: body)
             await fetchUsers()
             return true
@@ -109,4 +107,12 @@ struct CreateUserRequest: Encodable {
     let firstName: String
     let lastName: String
     let role: String
+}
+
+struct AssignTemplateRequest: Encodable {
+    let companyTemplateId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case companyTemplateId = "company_template_id"
+    }
 }

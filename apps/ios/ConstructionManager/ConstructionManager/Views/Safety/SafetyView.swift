@@ -8,6 +8,7 @@
 import SwiftUI
 import Combine
 import CoreLocation
+import UniformTypeIdentifiers
 
 // MARK: - Safety Tab Model
 struct SafetyTab: Identifiable, Codable {

@@ -1733,7 +1733,8 @@ struct PreferencesTab: View {
             status: user.status,
             isBlaster: user.isBlaster,
             createdAt: user.createdAt,
-            language: user.language
+            language: user.language,
+            companyTemplateName: user.companyTemplateName
         )
 
         // Update the app state
