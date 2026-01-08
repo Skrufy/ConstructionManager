@@ -19,13 +19,9 @@ extension Notification.Name {
 struct APIConfig {
     // Change this to your production URL when deploying
     #if DEBUG
-    // Use localhost for Simulator, or your Mac's IP for real device testing
-    // To find your IP: run `ipconfig getifaddr en0` in Terminal (en0 = Ethernet, en1 = WiFi)
-    #if targetEnvironment(simulator)
-    static let baseURL = "http://localhost:3000/api"  // Simulator can use localhost
-    #else
-    static let baseURL = "http://192.168.117.177:3000/api"  // Real device needs IP - current: 192.168.117.177
-    #endif
+    // TEMPORARY: Using Vercel production URL for testing
+    // To use localhost: run `npm run dev` in apps/web and change to "http://localhost:3000/api"
+    static let baseURL = "https://construction-manager-6msf.vercel.app/api"
     #else
     static let baseURL = "https://construction-manager-6msf.vercel.app/api"
     #endif
