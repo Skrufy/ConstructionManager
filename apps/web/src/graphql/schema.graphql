@@ -1,0 +1,875 @@
+# ConstructionPro GraphQL Schema
+# This schema provides typed access to all construction management data
+
+scalar DateTime
+scalar Date
+
+# =============================================================================
+# QUERIES
+# =============================================================================
+
+type Query {
+  # User & Auth
+  me: User!
+  myPermissions: UserPermissions!
+
+  # Projects
+  projects(
+    status: ProjectStatus
+    search: String
+    page: Int
+    pageSize: Int
+  ): ProjectConnection!
+  project(id: ID!): Project
+
+  # Daily Logs
+  dailyLogs(
+    projectId: ID
+    status: DailyLogStatus
+    startDate: Date
+    endDate: Date
+    page: Int
+    pageSize: Int
+  ): DailyLogConnection!
+  dailyLog(id: ID!): DailyLog
+
+  # Time Tracking
+  timeEntries(
+    projectId: ID
+    userId: ID
+    startDate: Date
+    endDate: Date
+    status: TimeEntryStatus
+    page: Int
+    pageSize: Int
+  ): TimeEntryConnection!
+  activeTimeEntry: TimeEntry
+
+  # Equipment
+  equipment(
+    projectId: ID
+    status: EquipmentStatus
+    search: String
+    page: Int
+    pageSize: Int
+  ): EquipmentConnection!
+  equipmentItem(id: ID!): Equipment
+
+  # Safety
+  incidents(
+    projectId: ID
+    severity: Severity
+    status: IncidentStatus
+    page: Int
+    pageSize: Int
+  ): IncidentConnection!
+  incident(id: ID!): Incident
+
+  inspections(
+    projectId: ID
+    status: InspectionStatus
+    page: Int
+    pageSize: Int
+  ): InspectionConnection!
+  inspection(id: ID!): Inspection
+
+  punchLists(
+    projectId: ID
+    status: PunchListStatus
+    page: Int
+    pageSize: Int
+  ): PunchListConnection!
+  punchList(id: ID!): PunchList
+
+  # Documents
+  documents(
+    projectId: ID
+    category: DocumentCategory
+    search: String
+    page: Int
+    pageSize: Int
+  ): DocumentConnection!
+  document(id: ID!): Document
+}
+
+# =============================================================================
+# MUTATIONS
+# =============================================================================
+
+type Mutation {
+  # Daily Logs
+  createDailyLog(input: CreateDailyLogInput!): DailyLog!
+  updateDailyLog(id: ID!, input: UpdateDailyLogInput!): DailyLog!
+  submitDailyLog(id: ID!): DailyLog!
+  approveDailyLog(id: ID!): DailyLog!
+  rejectDailyLog(id: ID!, reason: String!): DailyLog!
+
+  # Time Tracking
+  clockIn(input: ClockInInput!): TimeEntry!
+  clockOut(id: ID!, input: ClockOutInput!): TimeEntry!
+
+  # Equipment
+  createEquipment(input: CreateEquipmentInput!): Equipment!
+  updateEquipment(id: ID!, input: UpdateEquipmentInput!): Equipment!
+  assignEquipment(id: ID!, projectId: ID!): Equipment!
+  logEquipmentUsage(id: ID!, input: LogEquipmentUsageInput!): EquipmentLog!
+
+  # Safety
+  createIncident(input: CreateIncidentInput!): Incident!
+  updateIncident(id: ID!, input: UpdateIncidentInput!): Incident!
+  closeIncident(id: ID!, notes: String): Incident!
+
+  createInspection(input: CreateInspectionInput!): Inspection!
+  completeInspection(id: ID!, input: CompleteInspectionInput!): Inspection!
+
+  createPunchList(input: CreatePunchListInput!): PunchList!
+  createPunchListItem(punchListId: ID!, input: CreatePunchListItemInput!): PunchListItem!
+  updatePunchListItem(id: ID!, input: UpdatePunchListItemInput!): PunchListItem!
+  completePunchListItem(id: ID!): PunchListItem!
+  verifyPunchListItem(id: ID!): PunchListItem!
+
+  # Documents
+  uploadDocument(input: UploadDocumentInput!): Document!
+  createAnnotation(documentId: ID!, input: CreateAnnotationInput!): Annotation!
+  resolveAnnotation(id: ID!): Annotation!
+}
+
+# =============================================================================
+# TYPES
+# =============================================================================
+
+type User {
+  id: ID!
+  email: String!
+  name: String!
+  phone: String
+  role: UserRole!
+  language: String!
+  status: String!
+  avatarUrl: String
+  projects: [Project!]!
+  createdAt: DateTime!
+}
+
+type UserPermissions {
+  userId: ID!
+  role: UserRole!
+  companyPermissions: [ToolPermission!]!
+  projectPermissions: [ProjectPermission!]!
+}
+
+type ToolPermission {
+  tool: String!
+  level: PermissionLevel!
+}
+
+type ProjectPermission {
+  projectId: ID!
+  permissions: [ToolPermission!]!
+}
+
+type Project {
+  id: ID!
+  name: String!
+  description: String
+  status: ProjectStatus!
+  startDate: Date
+  endDate: Date
+  address: Address!
+  client: Client
+  team: [User!]!
+
+  # Related data
+  dailyLogs(limit: Int): [DailyLog!]!
+  equipment: [Equipment!]!
+  documents: [Document!]!
+
+  # Counts
+  dailyLogCount: Int!
+  documentCount: Int!
+  openIncidentCount: Int!
+
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Address {
+  street: String
+  city: String
+  state: String
+  zipCode: String
+  country: String
+  latitude: Float
+  longitude: Float
+  formatted: String!
+}
+
+type Client {
+  id: ID!
+  companyName: String!
+  contactName: String
+  email: String
+  phone: String
+  projects: [Project!]!
+}
+
+type DailyLog {
+  id: ID!
+  date: Date!
+  status: DailyLogStatus!
+  notes: String
+  weatherDelay: Boolean!
+  weatherDelayNotes: String
+  gpsLatitude: Float
+  gpsLongitude: Float
+  weatherData: String
+
+  # Relations
+  project: Project!
+  submitter: User!
+  approver: User
+
+  # Nested data
+  photos: [Photo!]!
+  entries: [DailyLogEntry!]!
+  crewMembers: [CrewEntry!]!
+  equipmentUsage: [EquipmentUsage!]!
+  materials: [MaterialEntry!]!
+  issues: [IssueEntry!]!
+
+  # Computed
+  photoCount: Int!
+  crewCount: Int!
+  entriesCount: Int!
+  totalLaborHours: Float!
+
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  submittedAt: DateTime
+  approvedAt: DateTime
+}
+
+type Photo {
+  id: ID!
+  url: String!
+  caption: String
+  gpsLatitude: Float
+  gpsLongitude: Float
+  takenAt: DateTime
+  createdAt: DateTime!
+}
+
+type DailyLogEntry {
+  id: ID!
+  activityLabel: Label!
+  locationLabels: [Label!]!
+  statusLabel: Label
+  percentComplete: Int
+  notes: String
+}
+
+type Label {
+  id: ID!
+  name: String!
+  category: String!
+}
+
+type CrewEntry {
+  id: ID!
+  name: String!
+  hours: Float!
+  trade: String
+}
+
+type EquipmentUsage {
+  id: ID!
+  equipment: Equipment!
+  hours: Float!
+}
+
+type MaterialEntry {
+  id: ID!
+  name: String!
+  quantity: Float!
+  unit: String
+  notes: String
+}
+
+type IssueEntry {
+  id: ID!
+  description: String!
+  severity: String!
+  resolved: Boolean!
+}
+
+type TimeEntry {
+  id: ID!
+  clockIn: DateTime!
+  clockOut: DateTime
+  breakMinutes: Int!
+  status: TimeEntryStatus!
+  notes: String
+  gpsInLatitude: Float
+  gpsInLongitude: Float
+  gpsOutLatitude: Float
+  gpsOutLongitude: Float
+
+  user: User!
+  project: Project!
+  approver: User
+
+  totalHours: Float
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Equipment {
+  id: ID!
+  name: String!
+  type: String!
+  status: EquipmentStatus!
+  samsaraId: String
+  currentLat: Float
+  currentLng: Float
+  lastUpdated: DateTime
+
+  currentProject: Project
+  assignments: [EquipmentAssignment!]!
+  usageLogs: [EquipmentLog!]!
+
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type EquipmentAssignment {
+  id: ID!
+  project: Project!
+  startDate: DateTime!
+  endDate: DateTime
+}
+
+type EquipmentLog {
+  id: ID!
+  date: DateTime!
+  hoursUsed: Float
+  fuelUsed: Float
+  notes: String
+  createdAt: DateTime!
+}
+
+type Incident {
+  id: ID!
+  incidentDate: DateTime!
+  incidentTime: String
+  location: String!
+  incidentType: IncidentType!
+  severity: Severity!
+  description: String!
+  rootCause: String
+  immediateActions: String
+  photos: [String!]
+  status: IncidentStatus!
+  investigationNotes: String
+  correctiveActions: String
+
+  project: Project!
+  reporter: User!
+  closer: User
+
+  closedAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Inspection {
+  id: ID!
+  date: DateTime!
+  location: String
+  overallStatus: InspectionStatus!
+  notes: String
+  signatureUrl: String
+  templateName: String
+  responses: [InspectionResponse!]
+
+  project: Project!
+  inspector: User!
+  photos: [InspectionPhoto!]!
+
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type InspectionResponse {
+  itemIndex: Int!
+  itemText: String!
+  status: InspectionItemStatus!
+  notes: String
+}
+
+type InspectionPhoto {
+  id: ID!
+  url: String!
+  caption: String
+  itemIndex: Int
+}
+
+type PunchList {
+  id: ID!
+  name: String!
+  description: String
+  dueDate: DateTime
+  status: PunchListStatus!
+
+  project: Project!
+  creator: User!
+  items: [PunchListItem!]!
+
+  totalItems: Int!
+  completedItems: Int!
+  openItems: Int!
+
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type PunchListItem {
+  id: ID!
+  description: String!
+  location: String
+  trade: String
+  priority: Priority!
+  status: PunchListItemStatus!
+  dueDate: DateTime
+  photos: [String!]
+  notes: String
+
+  assignee: User
+  completer: User
+  verifier: User
+
+  completedAt: DateTime
+  verifiedAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Document {
+  id: ID!
+  name: String!
+  type: String!
+  storagePath: String!
+  category: DocumentCategory
+  drawingNumber: String
+  sheetTitle: String
+  discipline: String
+  revision: String
+  scale: String
+  pageCount: Int
+  currentVersion: Int!
+  isLatest: Boolean!
+  isAdminOnly: Boolean!
+  description: String
+  tags: [String!]
+  gpsLatitude: Float
+  gpsLongitude: Float
+  takenAt: DateTime
+
+  project: Project!
+  uploader: User!
+  revisions: [DocumentRevision!]!
+  annotations: [Annotation!]!
+
+  revisionCount: Int!
+  annotationCount: Int!
+  createdAt: DateTime!
+}
+
+type DocumentRevision {
+  id: ID!
+  version: Int!
+  storagePath: String!
+  changeNotes: String
+  uploadedBy: String!
+  fileSize: Int
+  createdAt: DateTime!
+}
+
+type Annotation {
+  id: ID!
+  annotationType: AnnotationType!
+  content: String!
+  pageNumber: Int
+  color: String!
+  createdBy: User!
+  resolvedAt: DateTime
+  resolvedBy: User
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+# =============================================================================
+# ENUMS
+# =============================================================================
+
+enum UserRole {
+  ADMIN
+  PROJECT_MANAGER
+  DEVELOPER
+  ARCHITECT
+  FOREMAN
+  CREW_LEADER
+  OFFICE
+  FIELD_WORKER
+  VIEWER
+}
+
+enum PermissionLevel {
+  NONE
+  READ_ONLY
+  STANDARD
+  ADMIN
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum DailyLogStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum TimeEntryStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum EquipmentStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+  OUT_OF_SERVICE
+}
+
+enum Severity {
+  MINOR
+  MODERATE
+  SERIOUS
+  CRITICAL
+}
+
+enum IncidentType {
+  INJURY
+  NEAR_MISS
+  PROPERTY_DAMAGE
+  ENVIRONMENTAL
+  OTHER
+}
+
+enum IncidentStatus {
+  REPORTED
+  UNDER_INVESTIGATION
+  CLOSED
+}
+
+enum InspectionStatus {
+  SCHEDULED
+  PENDING
+  PASSED
+  FAILED
+  REQUIRES_FOLLOWUP
+}
+
+enum InspectionItemStatus {
+  PASS
+  FAIL
+  NA
+}
+
+enum PunchListStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum PunchListItemStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  VERIFIED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum DocumentCategory {
+  DRAWINGS
+  SPECIFICATIONS
+  CONTRACTS
+  PHOTOS
+  REPORTS
+  OTHER
+}
+
+enum AnnotationType {
+  COMMENT
+  MARKUP
+  HIGHLIGHT
+  MEASUREMENT
+  CALLOUT
+}
+
+# =============================================================================
+# CONNECTIONS (Pagination)
+# =============================================================================
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+type ProjectConnection {
+  edges: [ProjectEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ProjectEdge {
+  node: Project!
+  cursor: String!
+}
+
+type DailyLogConnection {
+  edges: [DailyLogEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type DailyLogEdge {
+  node: DailyLog!
+  cursor: String!
+}
+
+type TimeEntryConnection {
+  edges: [TimeEntryEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type TimeEntryEdge {
+  node: TimeEntry!
+  cursor: String!
+}
+
+type EquipmentConnection {
+  edges: [EquipmentEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type EquipmentEdge {
+  node: Equipment!
+  cursor: String!
+}
+
+type IncidentConnection {
+  edges: [IncidentEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type IncidentEdge {
+  node: Incident!
+  cursor: String!
+}
+
+type InspectionConnection {
+  edges: [InspectionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type InspectionEdge {
+  node: Inspection!
+  cursor: String!
+}
+
+type PunchListConnection {
+  edges: [PunchListEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type PunchListEdge {
+  node: PunchList!
+  cursor: String!
+}
+
+type DocumentConnection {
+  edges: [DocumentEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type DocumentEdge {
+  node: Document!
+  cursor: String!
+}
+
+# =============================================================================
+# INPUTS
+# =============================================================================
+
+input CreateDailyLogInput {
+  projectId: ID!
+  date: Date!
+  notes: String
+  weatherDelay: Boolean
+  weatherDelayNotes: String
+  gpsLatitude: Float
+  gpsLongitude: Float
+}
+
+input UpdateDailyLogInput {
+  notes: String
+  weatherDelay: Boolean
+  weatherDelayNotes: String
+}
+
+input ClockInInput {
+  projectId: ID!
+  gpsLatitude: Float
+  gpsLongitude: Float
+  notes: String
+}
+
+input ClockOutInput {
+  gpsLatitude: Float
+  gpsLongitude: Float
+  breakMinutes: Int
+  notes: String
+}
+
+input CreateEquipmentInput {
+  name: String!
+  type: String!
+  status: EquipmentStatus
+  samsaraId: String
+}
+
+input UpdateEquipmentInput {
+  name: String
+  type: String
+  status: EquipmentStatus
+  samsaraId: String
+}
+
+input LogEquipmentUsageInput {
+  date: DateTime
+  hoursUsed: Float
+  fuelUsed: Float
+  notes: String
+}
+
+input CreateIncidentInput {
+  projectId: ID!
+  incidentDate: DateTime!
+  incidentTime: String
+  location: String!
+  incidentType: IncidentType!
+  severity: Severity!
+  description: String!
+  rootCause: String
+  immediateActions: String
+}
+
+input UpdateIncidentInput {
+  location: String
+  incidentType: IncidentType
+  severity: Severity
+  description: String
+  rootCause: String
+  immediateActions: String
+  investigationNotes: String
+  correctiveActions: String
+}
+
+input CreateInspectionInput {
+  projectId: ID!
+  templateId: ID
+  date: DateTime!
+  location: String
+  notes: String
+}
+
+input CompleteInspectionInput {
+  responses: [InspectionResponseInput!]!
+  overallStatus: InspectionStatus!
+  notes: String
+  signatureUrl: String
+}
+
+input InspectionResponseInput {
+  itemIndex: Int!
+  status: InspectionItemStatus!
+  notes: String
+}
+
+input CreatePunchListInput {
+  projectId: ID!
+  name: String!
+  description: String
+  dueDate: DateTime
+}
+
+input CreatePunchListItemInput {
+  description: String!
+  location: String
+  trade: String
+  priority: Priority
+  assignedTo: ID
+  dueDate: DateTime
+}
+
+input UpdatePunchListItemInput {
+  description: String
+  location: String
+  trade: String
+  priority: Priority
+  assignedTo: ID
+  dueDate: DateTime
+  notes: String
+}
+
+input UploadDocumentInput {
+  projectId: ID!
+  name: String!
+  category: DocumentCategory
+  description: String
+  tags: [String!]
+  isAdminOnly: Boolean
+  dailyLogId: ID
+  gpsLatitude: Float
+  gpsLongitude: Float
+}
+
+input CreateAnnotationInput {
+  annotationType: AnnotationType!
+  content: String!
+  pageNumber: Int
+  color: String
+}
