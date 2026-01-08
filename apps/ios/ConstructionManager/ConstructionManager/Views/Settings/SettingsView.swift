@@ -1731,6 +1731,7 @@ struct PreferencesTab: View {
             phone: user.phone,
             role: role,
             status: user.status,
+            isBlaster: user.isBlaster,
             createdAt: user.createdAt,
             language: user.language
         )

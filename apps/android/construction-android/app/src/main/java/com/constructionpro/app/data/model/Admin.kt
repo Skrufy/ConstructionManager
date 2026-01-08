@@ -197,19 +197,19 @@ data class UserDetail(
     val phone: String? = null,
     val role: String,
     val status: String,
-    val isBlaster: Boolean = false,
-    val teamId: String? = null,
-    val teamName: String? = null,
-    val jobTitle: String? = null,
+    @SerialName("is_blaster") val isBlaster: Boolean = false,
+    @SerialName("team_id") val teamId: String? = null,
+    @SerialName("team_name") val teamName: String? = null,
+    @SerialName("job_title") val jobTitle: String? = null,
     val department: String? = null,
-    val employeeId: String? = null,
-    val hireDate: String? = null,
-    val avatarUrl: String? = null,
-    val lastLoginAt: String? = null,
-    val createdAt: String? = null,
-    val updatedAt: String? = null,
+    @SerialName("employee_id") val employeeId: String? = null,
+    @SerialName("hire_date") val hireDate: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("last_login_at") val lastLoginAt: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
     val permissions: List<String>? = null,
-    val assignedProjects: List<String>? = null
+    @SerialName("assigned_projects") val assignedProjects: List<String>? = null
 )
 
 @Serializable
@@ -227,14 +227,14 @@ data class UpdateUserRequest(
     val phone: String? = null,
     val role: String? = null,
     val status: String? = null,
-    val isBlaster: Boolean? = null,
-    val teamId: String? = null,
-    val jobTitle: String? = null,
+    @SerialName("is_blaster") val isBlaster: Boolean? = null,
+    @SerialName("team_id") val teamId: String? = null,
+    @SerialName("job_title") val jobTitle: String? = null,
     val department: String? = null,
-    val employeeId: String? = null,
-    val hireDate: String? = null,
+    @SerialName("employee_id") val employeeId: String? = null,
+    @SerialName("hire_date") val hireDate: String? = null,
     val permissions: List<String>? = null,
-    val assignedProjects: List<String>? = null
+    @SerialName("assigned_projects") val assignedProjects: List<String>? = null
 )
 
 @Serializable

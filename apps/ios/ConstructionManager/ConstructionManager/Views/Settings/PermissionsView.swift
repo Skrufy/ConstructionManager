@@ -14,24 +14,34 @@ struct PermissionsView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Tab Selector
-                Picker("", selection: $selectedTab) {
-                    Text("Templates").tag(0)
-                    Text("Role Defaults").tag(1)
-                    Text("User Overrides").tag(2)
-                    Text("Project Access").tag(3)
+                // Tab Selector - Scrollable for 4 tabs
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: AppSpacing.xs) {
+                        PermissionTabButton(title: "Project", isSelected: selectedTab == 0) {
+                            selectedTab = 0
+                        }
+                        PermissionTabButton(title: "Company", isSelected: selectedTab == 1) {
+                            selectedTab = 1
+                        }
+                        PermissionTabButton(title: "Users", isSelected: selectedTab == 2) {
+                            selectedTab = 2
+                        }
+                        PermissionTabButton(title: "Access", isSelected: selectedTab == 3) {
+                            selectedTab = 3
+                        }
+                    }
+                    .padding(.horizontal, AppSpacing.md)
                 }
-                .pickerStyle(.segmented)
-                .padding(AppSpacing.md)
+                .padding(.vertical, AppSpacing.sm)
 
                 TabView(selection: $selectedTab) {
-                    PermissionTemplatesTab()
+                    ProjectTemplatesTab()
                         .tag(0)
 
-                    RoleDefaultsTab()
+                    CompanyTemplatesTab()
                         .tag(1)
 
-                    UserOverridesTab()
+                    UserAssignmentsTab()
                         .tag(2)
 
                     ProjectAccessTab()
@@ -51,48 +61,42 @@ struct PermissionsView: View {
     }
 }
 
-// MARK: - Permission Templates Tab
-struct PermissionTemplatesTab: View {
-    @StateObject private var adminService = AdminService.shared
-    @State private var selectedScope = "all"
-    @State private var selectedTemplate: PermissionTemplate?
+// MARK: - Permission Tab Button
+struct PermissionTabButton: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
 
-    var filteredTemplates: [PermissionTemplate] {
-        switch selectedScope {
-        case "company":
-            return adminService.companyTemplates
-        case "project":
-            return adminService.projectTemplates
-        default:
-            return adminService.permissionTemplates
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(isSelected ? AppTypography.bodySemibold : AppTypography.body)
+                .foregroundColor(isSelected ? AppColors.primary600 : AppColors.textSecondary)
+                .padding(.horizontal, AppSpacing.md)
+                .padding(.vertical, AppSpacing.sm)
+                .background(isSelected ? AppColors.primary100 : Color.clear)
+                .cornerRadius(AppSpacing.radiusFull)
         }
     }
+}
+
+// MARK: - Project Templates Tab
+struct ProjectTemplatesTab: View {
+    @StateObject private var adminService = AdminService.shared
+    @State private var selectedTemplate: PermissionTemplate?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AppSpacing.lg) {
                 // Description
                 VStack(alignment: .leading, spacing: AppSpacing.xs) {
-                    Text("Permission Templates")
+                    Text("Project Templates")
                         .font(AppTypography.heading3)
                         .foregroundColor(AppColors.textPrimary)
 
-                    Text("Procore-style permission templates define tool access levels for users at company or project level.")
+                    Text("Define what users can do within specific projects")
                         .font(AppTypography.secondary)
                         .foregroundColor(AppColors.textSecondary)
-                }
-
-                // Scope Filter
-                HStack(spacing: AppSpacing.xs) {
-                    FilterChip(title: "All", isSelected: selectedScope == "all") {
-                        selectedScope = "all"
-                    }
-                    FilterChip(title: "Company", isSelected: selectedScope == "company") {
-                        selectedScope = "company"
-                    }
-                    FilterChip(title: "Project", isSelected: selectedScope == "project") {
-                        selectedScope = "project"
-                    }
                 }
 
                 // Templates List
@@ -104,16 +108,16 @@ struct PermissionTemplatesTab: View {
                         Spacer()
                     }
                     .padding(.vertical, AppSpacing.xl)
-                } else if filteredTemplates.isEmpty {
+                } else if adminService.projectTemplates.isEmpty {
                     AppCard {
                         VStack(spacing: AppSpacing.sm) {
-                            Image(systemName: "shield.slash")
+                            Image(systemName: "folder.badge.gearshape")
                                 .font(.system(size: 32))
                                 .foregroundColor(AppColors.gray400)
-                            Text("No templates found")
+                            Text("No project templates")
                                 .font(AppTypography.bodyMedium)
                                 .foregroundColor(AppColors.textSecondary)
-                            Text("Permission templates will appear here once configured.")
+                            Text("Project permission templates will appear here")
                                 .font(AppTypography.secondary)
                                 .foregroundColor(AppColors.textTertiary)
                                 .multilineTextAlignment(.center)
@@ -122,7 +126,73 @@ struct PermissionTemplatesTab: View {
                         .padding(.vertical, AppSpacing.lg)
                     }
                 } else {
-                    ForEach(filteredTemplates) { template in
+                    ForEach(adminService.projectTemplates) { template in
+                        Button(action: { selectedTemplate = template }) {
+                            PermissionTemplateCard(template: template)
+                        }
+                    }
+                }
+            }
+            .padding(AppSpacing.md)
+        }
+        .onAppear {
+            Task {
+                await adminService.fetchPermissionTemplates()
+            }
+        }
+        .sheet(item: $selectedTemplate) { template in
+            PermissionTemplateDetailView(template: template)
+        }
+    }
+}
+
+// MARK: - Company Templates Tab
+struct CompanyTemplatesTab: View {
+    @StateObject private var adminService = AdminService.shared
+    @State private var selectedTemplate: PermissionTemplate?
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: AppSpacing.lg) {
+                // Description
+                VStack(alignment: .leading, spacing: AppSpacing.xs) {
+                    Text("Company Templates")
+                        .font(AppTypography.heading3)
+                        .foregroundColor(AppColors.textPrimary)
+
+                    Text("Define what users can do at the company level")
+                        .font(AppTypography.secondary)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                // Templates List
+                if adminService.isLoading {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle())
+                        Spacer()
+                    }
+                    .padding(.vertical, AppSpacing.xl)
+                } else if adminService.companyTemplates.isEmpty {
+                    AppCard {
+                        VStack(spacing: AppSpacing.sm) {
+                            Image(systemName: "building.2.crop.circle.badge.gearshape")
+                                .font(.system(size: 32))
+                                .foregroundColor(AppColors.gray400)
+                            Text("No company templates")
+                                .font(AppTypography.bodyMedium)
+                                .foregroundColor(AppColors.textSecondary)
+                            Text("Company permission templates will appear here")
+                                .font(AppTypography.secondary)
+                                .foregroundColor(AppColors.textTertiary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AppSpacing.lg)
+                    }
+                } else {
+                    ForEach(adminService.companyTemplates) { template in
                         Button(action: { selectedTemplate = template }) {
                             PermissionTemplateCard(template: template)
                         }
@@ -367,6 +437,338 @@ struct ToolAccessRow: View {
                 .padding(.vertical, AppSpacing.xs)
                 .background(levelColor.opacity(0.1))
                 .cornerRadius(AppSpacing.radiusSmall)
+            }
+        }
+    }
+}
+
+// MARK: - User Assignments Tab
+struct UserAssignmentsTab: View {
+    @StateObject private var userService = UserService.shared
+    @StateObject private var adminService = AdminService.shared
+    @State private var searchText = ""
+    @State private var selectedUser: User?
+    @State private var showingAssignModal = false
+
+    var filteredUsers: [User] {
+        if searchText.isEmpty {
+            return userService.users
+        }
+        return userService.users.filter {
+            $0.name.localizedCaseInsensitiveContains(searchText) ||
+            $0.email.localizedCaseInsensitiveContains(searchText)
+        }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: AppSpacing.lg) {
+                // Description
+                VStack(alignment: .leading, spacing: AppSpacing.xs) {
+                    Text("User Assignments")
+                        .font(AppTypography.heading3)
+                        .foregroundColor(AppColors.textPrimary)
+
+                    Text("Assign company-wide permission templates to users")
+                        .font(AppTypography.secondary)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                // Search Bar
+                HStack(spacing: AppSpacing.sm) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 16))
+                        .foregroundColor(AppColors.gray400)
+
+                    TextField("Search users...", text: $searchText)
+                        .font(AppTypography.body)
+                        .foregroundColor(AppColors.textPrimary)
+
+                    if !searchText.isEmpty {
+                        Button(action: { searchText = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(AppColors.gray400)
+                        }
+                    }
+                }
+                .padding(AppSpacing.sm)
+                .background(AppColors.gray100)
+                .cornerRadius(AppSpacing.radiusMedium)
+
+                // User List
+                if userService.isLoading {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle())
+                        Spacer()
+                    }
+                    .padding(.vertical, AppSpacing.xl)
+                } else if filteredUsers.isEmpty {
+                    AppCard {
+                        VStack(spacing: AppSpacing.sm) {
+                            Image(systemName: searchText.isEmpty ? "person.3" : "magnifyingglass")
+                                .font(.system(size: 32))
+                                .foregroundColor(AppColors.gray400)
+                            Text(searchText.isEmpty ? "No users found" : "No matching users")
+                                .font(AppTypography.bodyMedium)
+                                .foregroundColor(AppColors.textSecondary)
+                            Text(searchText.isEmpty ? "Users will appear here" : "Try adjusting your search")
+                                .font(AppTypography.secondary)
+                                .foregroundColor(AppColors.textTertiary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AppSpacing.lg)
+                    }
+                } else {
+                    ForEach(filteredUsers) { user in
+                        Button(action: {
+                            selectedUser = user
+                            showingAssignModal = true
+                        }) {
+                            UserAssignmentCard(user: user)
+                        }
+                    }
+                }
+            }
+            .padding(AppSpacing.md)
+        }
+        .onAppear {
+            Task {
+                await userService.fetchUsers()
+                await adminService.fetchPermissionTemplates()
+            }
+        }
+        .sheet(isPresented: $showingAssignModal) {
+            if let user = selectedUser {
+                AssignCompanyTemplateSheet(user: user, companyTemplates: adminService.companyTemplates)
+            }
+        }
+    }
+}
+
+// MARK: - User Assignment Card
+struct UserAssignmentCard: View {
+    let user: User
+
+    var body: some View {
+        AppCard {
+            HStack(spacing: AppSpacing.sm) {
+                // User Avatar
+                ZStack {
+                    Circle()
+                        .fill(user.role.color.opacity(0.2))
+                        .frame(width: 44, height: 44)
+                    Text(user.initials)
+                        .font(AppTypography.secondaryMedium)
+                        .foregroundColor(user.role.color)
+                }
+
+                // User Info
+                VStack(alignment: .leading, spacing: AppSpacing.xxs) {
+                    Text(user.name)
+                        .font(AppTypography.bodyMedium)
+                        .foregroundColor(AppColors.textPrimary)
+                    Text(user.email)
+                        .font(AppTypography.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                Spacer()
+
+                // Company Template Badge
+                VStack(alignment: .trailing, spacing: AppSpacing.xxs) {
+                    if let templateName = user.companyTemplateName {
+                        Text(templateName)
+                            .font(AppTypography.captionMedium)
+                            .foregroundColor(AppColors.primary600)
+                            .padding(.horizontal, AppSpacing.xs)
+                            .padding(.vertical, 2)
+                            .background(AppColors.primary100)
+                            .cornerRadius(AppSpacing.radiusSmall)
+                    } else {
+                        Text("Not assigned")
+                            .font(AppTypography.captionMedium)
+                            .foregroundColor(AppColors.warning)
+                            .padding(.horizontal, AppSpacing.xs)
+                            .padding(.vertical, 2)
+                            .background(AppColors.warningLight)
+                            .cornerRadius(AppSpacing.radiusSmall)
+                    }
+                }
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.gray400)
+            }
+        }
+    }
+}
+
+// MARK: - Assign Company Template Sheet
+struct AssignCompanyTemplateSheet: View {
+    let user: User
+    let companyTemplates: [PermissionTemplate]
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedTemplateId: String = ""
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: AppSpacing.lg) {
+                    // User Info
+                    AppCard {
+                        HStack(spacing: AppSpacing.md) {
+                            ZStack {
+                                Circle()
+                                    .fill(user.role.color.opacity(0.2))
+                                    .frame(width: 56, height: 56)
+                                Text(user.initials)
+                                    .font(AppTypography.bodySemibold)
+                                    .foregroundColor(user.role.color)
+                            }
+
+                            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
+                                Text(user.name)
+                                    .font(AppTypography.heading3)
+                                    .foregroundColor(AppColors.textPrimary)
+                                Text(user.email)
+                                    .font(AppTypography.secondary)
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                        }
+                    }
+
+                    // Template Selection
+                    VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                        Text("Company Template")
+                            .font(AppTypography.label)
+                            .foregroundColor(AppColors.textPrimary)
+
+                        if companyTemplates.isEmpty {
+                            AppCard {
+                                Text("No company templates available")
+                                    .font(AppTypography.secondary)
+                                    .foregroundColor(AppColors.textTertiary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, AppSpacing.md)
+                            }
+                        } else {
+                            ForEach(companyTemplates) { template in
+                                Button(action: {
+                                    selectedTemplateId = template.id
+                                }) {
+                                    TemplateSelectionRow(
+                                        template: template,
+                                        isSelected: selectedTemplateId == template.id
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if let error = errorMessage {
+                        Text(error)
+                            .font(AppTypography.secondary)
+                            .foregroundColor(AppColors.error)
+                            .padding(AppSpacing.sm)
+                            .frame(maxWidth: .infinity)
+                            .background(AppColors.errorLight)
+                            .cornerRadius(AppSpacing.radiusMedium)
+                    }
+
+                    // Save Button
+                    PrimaryButton(isLoading ? "Saving..." : "Assign Template", icon: "checkmark") {
+                        Task {
+                            await assignTemplate()
+                        }
+                    }
+                    .disabled(selectedTemplateId.isEmpty || isLoading)
+                }
+                .padding(AppSpacing.md)
+            }
+            .background(AppColors.background)
+            .navigationTitle("Assign Template")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
+        .onAppear {
+            // Pre-select current template if user has one
+            if let currentTemplate = companyTemplates.first(where: { $0.name == user.companyTemplateName }) {
+                selectedTemplateId = currentTemplate.id
+            }
+        }
+    }
+
+    private func assignTemplate() async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            // Call API to assign template
+            try await APIClient.shared.post("/permissions/assign", body: [
+                "user_id": user.id,
+                "company_template_id": selectedTemplateId
+            ])
+
+            // Refresh user data
+            await UserService.shared.fetchUsers()
+            dismiss()
+        } catch {
+            errorMessage = "Failed to assign template: \(error.localizedDescription)"
+        }
+
+        isLoading = false
+    }
+}
+
+// MARK: - Template Selection Row
+struct TemplateSelectionRow: View {
+    let template: PermissionTemplate
+    let isSelected: Bool
+
+    var body: some View {
+        AppCard {
+            HStack(spacing: AppSpacing.sm) {
+                VStack(alignment: .leading, spacing: AppSpacing.xxs) {
+                    HStack(spacing: AppSpacing.xs) {
+                        Text(template.name)
+                            .font(AppTypography.bodyMedium)
+                            .foregroundColor(AppColors.textPrimary)
+
+                        if template.isSystemDefault {
+                            Text("Default")
+                                .font(AppTypography.captionMedium)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, AppSpacing.xs)
+                                .padding(.vertical, 2)
+                                .background(AppColors.purple)
+                                .cornerRadius(AppSpacing.radiusSmall)
+                        }
+                    }
+
+                    if let description = template.description {
+                        Text(description)
+                            .font(AppTypography.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                            .lineLimit(2)
+                    }
+                }
+
+                Spacer()
+
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 24))
+                    .foregroundColor(isSelected ? AppColors.success : AppColors.gray300)
             }
         }
     }

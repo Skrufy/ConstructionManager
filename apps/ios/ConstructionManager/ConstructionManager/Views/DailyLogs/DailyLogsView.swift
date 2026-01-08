@@ -266,6 +266,15 @@ struct DailyLogCard: View {
                     }
                 }
 
+                // Notes preview
+                if let notes = log.notes, !notes.isEmpty {
+                    Text(notes)
+                        .font(AppTypography.secondary)
+                        .foregroundColor(AppColors.textSecondary)
+                        .lineLimit(2)
+                        .padding(.top, AppSpacing.xxs)
+                }
+
                 // Only show stats row if there's visible data to show (respecting module settings)
                 let hasVisibleStats = log.entriesCount > 0 ||
                     (log.materialsCount > 0 && appState.shouldShowModule(.materials)) ||

@@ -46,6 +46,7 @@ private data class UserEditForm(
     val phone: String = "",
     val role: String = UserRole.FIELD_WORKER,
     val status: String = UserStatus.ACTIVE,
+    val isBlaster: Boolean = false,
     val jobTitle: String = "",
     val department: String = "",
     val employeeId: String = ""
@@ -79,6 +80,7 @@ fun UserDetailScreen(
                     phone = user.phone ?: "",
                     role = user.role,
                     status = user.status,
+                    isBlaster = user.isBlaster,
                     jobTitle = user.jobTitle ?: "",
                     department = user.department ?: "",
                     employeeId = user.employeeId ?: ""
@@ -99,6 +101,7 @@ fun UserDetailScreen(
                     phone = editForm.phone.ifBlank { null },
                     role = editForm.role,
                     status = editForm.status,
+                    isBlaster = editForm.isBlaster,
                     jobTitle = editForm.jobTitle.ifBlank { null },
                     department = editForm.department.ifBlank { null },
                     employeeId = editForm.employeeId.ifBlank { null }
@@ -186,6 +189,7 @@ fun UserDetailScreen(
                                         phone = user.phone ?: "",
                                         role = user.role,
                                         status = user.status,
+                                        isBlaster = user.isBlaster,
                                         jobTitle = user.jobTitle ?: "",
                                         department = user.department ?: "",
                                         employeeId = user.employeeId ?: ""
@@ -445,6 +449,33 @@ private fun UserViewContent(
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier.padding(horizontal = AppSpacing.xs, vertical = AppSpacing.xxs)
                             )
+                        }
+
+                        // Blaster Badge
+                        if (user.isBlaster) {
+                            Surface(
+                                shape = RoundedCornerShape(AppSpacing.xxs),
+                                color = ConstructionOrange.copy(alpha = 0.1f)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = AppSpacing.xs, vertical = AppSpacing.xxs),
+                                    horizontalArrangement = Arrangement.spacedBy(AppSpacing.xxs),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.LocalFireDepartment,
+                                        contentDescription = null,
+                                        tint = ConstructionOrange,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Text(
+                                        text = "Blaster",
+                                        style = AppTypography.secondaryMedium,
+                                        color = ConstructionOrange,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -733,6 +764,45 @@ private fun UserEditContent(
                             )
                         }
                     }
+                }
+
+                // Blaster Certification Toggle
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .defaultMinSize(minHeight = 56.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocalFireDepartment,
+                            contentDescription = null,
+                            tint = if (form.isBlaster) ConstructionOrange else AppColors.textSecondary
+                        )
+                        Column {
+                            Text(
+                                text = "Blaster Certification",
+                                style = AppTypography.body,
+                                fontWeight = FontWeight.Medium,
+                                color = AppColors.textPrimary
+                            )
+                            Text(
+                                text = "Can be assigned to blasting documents",
+                                style = AppTypography.secondary,
+                                color = AppColors.textSecondary
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = form.isBlaster,
+                        onCheckedChange = { onFormChange(form.copy(isBlaster = it)) },
+                        enabled = !saving,
+                        modifier = Modifier.defaultMinSize(minWidth = 56.dp, minHeight = 56.dp)
+                    )
                 }
             }
         }

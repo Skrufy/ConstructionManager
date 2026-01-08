@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		7D8EF82F2F0F501C0078D4BE /* Apollo in Frameworks */ = {isa = PBXBuildFile; productRef = 7DC6C7C22F09A6D700D9BBE3 /* Apollo */; };
+		7D8EF8302F0F501C0078D4BE /* ApolloAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 7DC6C7C32F09A6D700D9BBE4 /* ApolloAPI */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		7D75CBA22EFB9F590010F8B1 /* ConstructionManager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ConstructionManager.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +28,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7D8EF8302F0F501C0078D4BE /* ApolloAPI in Frameworks */,
+				7D8EF82F2F0F501C0078D4BE /* Apollo in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -360,11 +367,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7DC6C7C12F09A6D700D9BBE2 /* XCRemoteSwiftPackageReference "apollo-ios" */;
 			productName = ApolloAPI;
-		};
-		7DC6C7C42F09A6D700D9BBE5 /* ApolloSQLite */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 7DC6C7C12F09A6D700D9BBE2 /* XCRemoteSwiftPackageReference "apollo-ios" */;
-			productName = ApolloSQLite;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

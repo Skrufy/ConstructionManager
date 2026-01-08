@@ -20,14 +20,14 @@ struct APIConfig {
     // Change this to your production URL when deploying
     #if DEBUG
     // Use localhost for Simulator, or your Mac's IP for real device testing
-    // To find your IP: run `ipconfig getifaddr en1` in Terminal (en1 = WiFi on this Mac)
+    // To find your IP: run `ipconfig getifaddr en0` in Terminal (en0 = Ethernet, en1 = WiFi)
     #if targetEnvironment(simulator)
     static let baseURL = "http://localhost:3000/api"  // Simulator can use localhost
     #else
-    static let baseURL = "http://192.168.1.248:3000/api"  // Real device needs IP - update to your computer's IP
+    static let baseURL = "http://192.168.117.177:3000/api"  // Real device needs IP - current: 192.168.117.177
     #endif
     #else
-    static let baseURL = "https://your-production-domain.com/api"
+    static let baseURL = "https://construction-manager-6msf.vercel.app/api"
     #endif
 
     // Shorter timeout for local dev (slow WiFi), longer for production

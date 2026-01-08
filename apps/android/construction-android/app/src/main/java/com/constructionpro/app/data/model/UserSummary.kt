@@ -1,5 +1,6 @@
 package com.constructionpro.app.data.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -10,7 +11,8 @@ data class UserSummary(
   val role: String? = null,
   val status: String? = null,
   val phone: String? = null,
-  val createdAt: String? = null
+  @SerialName("is_blaster") val isBlaster: Boolean = false,
+  @SerialName("created_at") val createdAt: String? = null
 )
 
 @Serializable

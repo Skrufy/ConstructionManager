@@ -87,6 +87,7 @@ import com.constructionpro.app.ui.screens.SecureUploadScreen
 import com.constructionpro.app.ui.screens.SafetyMeetingCreateScreen
 import com.constructionpro.app.ui.screens.ScheduleCreateScreen
 import com.constructionpro.app.ui.screens.DroneFlightsScreen
+import com.constructionpro.app.ui.screens.PermissionsScreen
 import com.constructionpro.app.ui.theme.ConstructionProTheme
 import kotlinx.coroutines.launch
 
@@ -808,7 +809,8 @@ private fun AppNav(
                 onOpenUserManagement = { navController.navigate("user-management") },
                 onOpenTeamManagement = { navController.navigate("team-management") },
                 onOpenAuditLogs = { navController.navigate("audit-logs") },
-                onOpenInvitations = { navController.navigate("invitations") }
+                onOpenInvitations = { navController.navigate("invitations") },
+                onOpenPermissions = { navController.navigate("permissions") }
             )
         }
 
@@ -854,6 +856,14 @@ private fun AppNav(
         // Admin - Audit Logs
         composable("audit-logs") {
             AuditLogsScreen(
+                apiService = apiService,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // Admin - Permissions
+        composable("permissions") {
+            PermissionsScreen(
                 apiService = apiService,
                 onBack = { navController.popBackStack() }
             )

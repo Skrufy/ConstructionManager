@@ -105,8 +105,9 @@ struct User: Identifiable, Codable {
     let isBlaster: Bool?  // Certified blaster who can be assigned to blasting documents
     let createdAt: Date
     let language: String?  // User's preferred language ("en" or "es")
+    let companyTemplateName: String?  // Name of assigned company permission template
     // Note: No explicit CodingKeys needed - APIClient uses convertFromSnakeCase
-    // which automatically converts created_at → createdAt, is_blaster → isBlaster
+    // which automatically converts created_at → createdAt, is_blaster → isBlaster, company_template_name → companyTemplateName
 
     var initials: String {
         let components = name.split(separator: " ")
@@ -124,11 +125,11 @@ struct User: Identifiable, Codable {
 // MARK: - Mock Data
 extension User {
     static let mockUsers: [User] = [
-        User(id: "1", name: "Steven Taylor", email: "steven@company.com", phone: "555-0101", role: .admin, status: .active, isBlaster: false, createdAt: Date(), language: "en"),
-        User(id: "2", name: "John Smith", email: "john@company.com", phone: "555-0102", role: .projectManager, status: .active, isBlaster: false, createdAt: Date(), language: "en"),
-        User(id: "3", name: "Sarah Johnson", email: "sarah@company.com", phone: "555-0103", role: .foreman, status: .active, isBlaster: true, createdAt: Date(), language: "es"),
-        User(id: "4", name: "Mike Davis", email: "mike@company.com", phone: "555-0104", role: .fieldWorker, status: .active, isBlaster: false, createdAt: Date(), language: "en"),
-        User(id: "5", name: "Emily Brown", email: "emily@company.com", phone: "555-0105", role: .officeStaff, status: .active, isBlaster: false, createdAt: Date(), language: "en")
+        User(id: "1", name: "Steven Taylor", email: "steven@company.com", phone: "555-0101", role: .admin, status: .active, isBlaster: false, createdAt: Date(), language: "en", companyTemplateName: nil),
+        User(id: "2", name: "John Smith", email: "john@company.com", phone: "555-0102", role: .projectManager, status: .active, isBlaster: false, createdAt: Date(), language: "en", companyTemplateName: nil),
+        User(id: "3", name: "Sarah Johnson", email: "sarah@company.com", phone: "555-0103", role: .foreman, status: .active, isBlaster: true, createdAt: Date(), language: "es", companyTemplateName: nil),
+        User(id: "4", name: "Mike Davis", email: "mike@company.com", phone: "555-0104", role: .fieldWorker, status: .active, isBlaster: false, createdAt: Date(), language: "en", companyTemplateName: nil),
+        User(id: "5", name: "Emily Brown", email: "emily@company.com", phone: "555-0105", role: .officeStaff, status: .active, isBlaster: false, createdAt: Date(), language: "en", companyTemplateName: nil)
     ]
 
     static let currentUser = User(
@@ -140,6 +141,7 @@ extension User {
         status: .active,
         isBlaster: false,
         createdAt: Date(),
-        language: "en"
+        language: "en",
+        companyTemplateName: nil
     )
 }

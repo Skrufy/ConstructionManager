@@ -61,7 +61,8 @@ fun CompanySettingsScreen(
     onOpenUserManagement: () -> Unit,
     onOpenTeamManagement: () -> Unit,
     onOpenAuditLogs: () -> Unit,
-    onOpenInvitations: () -> Unit = {}
+    onOpenInvitations: () -> Unit = {},
+    onOpenPermissions: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
     var state by remember { mutableStateOf(CompanySettingsState(loading = true)) }
@@ -298,6 +299,13 @@ fun CompanySettingsScreen(
                                         subtitle = stringResource(R.string.audit_logs_empty_desc),
                                         icon = Icons.Default.History,
                                         onClick = onOpenAuditLogs
+                                    )
+
+                                    AdminNavCard(
+                                        title = "Permissions",
+                                        subtitle = "Manage user permissions and templates",
+                                        icon = Icons.Default.Security,
+                                        onClick = onOpenPermissions
                                     )
                                 }
                             }

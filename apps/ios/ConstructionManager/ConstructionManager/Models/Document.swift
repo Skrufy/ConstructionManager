@@ -24,6 +24,7 @@ struct Document: Identifiable, Codable {
     let uploadedAt: Date
     let expiresAt: Date?
     let tags: [String]
+    let blasterAssignments: [BlasterAssignment]?
 
     var fileSizeFormatted: String {
         let bcf = ByteCountFormatter()
@@ -49,6 +50,11 @@ struct Document: Identifiable, Codable {
         return .valid
     }
 
+    var assignedBlasterNames: String? {
+        guard let assignments = blasterAssignments, !assignments.isEmpty else { return nil }
+        return assignments.map { $0.blaster.name }.joined(separator: ", ")
+    }
+
     enum ExpirationStatus {
         case valid, expiringSoon, expired
 
@@ -68,6 +74,17 @@ struct Document: Identifiable, Codable {
             }
         }
     }
+}
+
+// MARK: - Blaster Assignment
+struct BlasterAssignment: Codable {
+    let id: String
+    let blaster: BlasterInfo
+}
+
+struct BlasterInfo: Codable {
+    let id: String
+    let name: String
 }
 
 // MARK: - Document Category

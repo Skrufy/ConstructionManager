@@ -26,11 +26,11 @@ data class DocumentSummary(
   val type: String? = null,
   val category: String? = null,
   val description: String? = null,
-  val storagePath: String? = null,
-  val createdAt: String? = null,
+  @SerialName("storage_path") val storagePath: String? = null,
+  @SerialName("created_at") val createdAt: String? = null,
   val project: DocumentProject? = null,
   val uploader: DocumentUser? = null,
-  val blasters: List<DocumentUser> = emptyList(),
+  @SerialName("blaster_assignments") val blasters: List<BlasterAssignment> = emptyList(),
   val metadata: DocumentMetadata? = null,
   val revisions: List<DocumentRevision> = emptyList(),
   @SerialName("_count") val count: DocumentCount? = null
@@ -48,6 +48,12 @@ data class DocumentUser(
   val id: String? = null,
   val name: String? = null,
   val email: String? = null
+)
+
+@Serializable
+data class BlasterAssignment(
+  val id: String,
+  val blaster: DocumentUser
 )
 
 @Serializable

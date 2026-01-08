@@ -9,10 +9,25 @@ import SwiftUI
 import Combine
 import CoreLocation
 
+// MARK: - Safety Tab Model
+struct SafetyTab: Identifiable, Codable {
+    let id: Int
+    let title: String
+
+    static let incidents = SafetyTab(id: 0, title: "safety.incidents")
+    static let inspections = SafetyTab(id: 1, title: "safety.inspections")
+    static let punchLists = SafetyTab(id: 2, title: "safety.punchLists")
+    static let meetings = SafetyTab(id: 3, title: "safety.meetings")
+
+    static let defaultOrder = [incidents, inspections, punchLists, meetings]
+}
+
 struct SafetyView: View {
     @StateObject private var viewModel = SafetyViewModel()
     @EnvironmentObject var appState: AppState
-    @State private var selectedTab = 0
+    @State private var selectedTabId = 0
+    @State private var tabs: [SafetyTab] = []
+    @State private var draggedTab: SafetyTab?
     @State private var showingNewIncident = false
     @State private var showingNewPunchList = false
     @State private var showingNewMeeting = false
@@ -30,23 +45,41 @@ struct SafetyView: View {
         appState.hasPermission(.manageSafety)
     }
 
+    private var selectedTab: SafetyTab? {
+        tabs.first { $0.id == selectedTabId }
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Tab Selector
+                // Tab Selector with Drag-to-Reorder
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: AppSpacing.xs) {
-                        SafetyTabButton(title: "safety.incidents".localized, isSelected: selectedTab == 0) { selectedTab = 0 }
-                        SafetyTabButton(title: "safety.inspections".localized, isSelected: selectedTab == 1) { selectedTab = 1 }
-                        SafetyTabButton(title: "safety.punchLists".localized, isSelected: selectedTab == 2) { selectedTab = 2 }
-                        SafetyTabButton(title: "safety.meetings".localized, isSelected: selectedTab == 3) { selectedTab = 3 }
+                        ForEach(tabs) { tab in
+                            SafetyTabButton(
+                                title: tab.title.localized,
+                                isSelected: selectedTabId == tab.id
+                            ) {
+                                selectedTabId = tab.id
+                            }
+                            .onDrag {
+                                self.draggedTab = tab
+                                return NSItemProvider(object: String(tab.id) as NSString)
+                            }
+                            .onDrop(of: [.text], delegate: SafetyTabDropDelegate(
+                                item: tab,
+                                items: $tabs,
+                                draggedItem: $draggedTab,
+                                onReorder: saveTabOrder
+                            ))
+                        }
                     }
                     .padding(.horizontal, AppSpacing.md)
                     .padding(.vertical, AppSpacing.sm)
                 }
 
                 // Content
-                switch selectedTab {
+                switch selectedTabId {
                 case 0:
                     IncidentsListView(viewModel: viewModel, selectedIncident: $selectedIncident)
                 case 1:
@@ -117,7 +150,61 @@ struct SafetyView: View {
                 await viewModel.fetchIncidents()
                 await viewModel.fetchInspections()
             }
+            .onAppear {
+                loadTabOrder()
+            }
         }
+    }
+
+    // MARK: - Tab Order Management
+
+    private func loadTabOrder() {
+        if let savedData = UserDefaults.standard.data(forKey: "safetyTabOrder"),
+           let savedTabs = try? JSONDecoder().decode([SafetyTab].self, from: savedData) {
+            tabs = savedTabs
+        } else {
+            tabs = SafetyTab.defaultOrder
+        }
+    }
+
+    private func saveTabOrder() {
+        if let encoded = try? JSONEncoder().encode(tabs) {
+            UserDefaults.standard.set(encoded, forKey: "safetyTabOrder")
+        }
+    }
+}
+
+// MARK: - Safety Tab Drop Delegate
+struct SafetyTabDropDelegate: DropDelegate {
+    let item: SafetyTab
+    @Binding var items: [SafetyTab]
+    @Binding var draggedItem: SafetyTab?
+    let onReorder: () -> Void
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggedItem = nil
+        return true
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard let draggedItem = draggedItem,
+              draggedItem.id != item.id,
+              let from = items.firstIndex(where: { $0.id == draggedItem.id }),
+              let to = items.firstIndex(where: { $0.id == item.id }) else {
+            return
+        }
+
+        withAnimation(.default) {
+            items.move(fromOffsets: IndexSet(integer: from), toOffset: to > from ? to + 1 : to)
+        }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        return DropProposal(operation: .move)
+    }
+
+    func validateDrop(info: DropInfo) -> Bool {
+        return true
     }
 }
 
@@ -3368,45 +3455,6 @@ struct AttendeePickerSheet: View {
             newEmployeeCompany = ""
         } catch {
             print("[AttendeePickerSheet] Error creating employee: \(error)")
-        }
-    }
-}
-
-// MARK: - Image Picker
-struct ImagePicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?
-    let sourceType: UIImagePickerController.SourceType
-    @Environment(\.dismiss) private var dismiss
-
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = sourceType
-        picker.delegate = context.coordinator
-        return picker
-    }
-
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: ImagePicker
-
-        init(_ parent: ImagePicker) {
-            self.parent = parent
-        }
-
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
-            if let image = info[.originalImage] as? UIImage {
-                parent.image = image
-            }
-            parent.dismiss()
-        }
-
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.dismiss()
         }
     }
 }

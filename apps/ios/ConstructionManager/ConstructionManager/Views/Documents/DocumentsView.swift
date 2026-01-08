@@ -220,7 +220,7 @@ struct DocumentsView: View {
                     .font(.system(size: 14))
                     .foregroundColor(AppColors.orange)
                 Text("Blasters:")
-                    .font(AppTypography.bodyBold)
+                    .font(AppTypography.bodySemibold)
                 Text("(\(selectedBlasterIds.count) selected)")
                     .font(AppTypography.caption)
                     .foregroundColor(AppColors.textSecondary)
@@ -579,7 +579,7 @@ struct DocumentUploadView: View {
                                     Image(systemName: "hammer.fill")
                                         .foregroundColor(AppColors.orange)
                                     Text("Assign Blasters")
-                                        .font(AppTypography.bodyBold)
+                                        .font(AppTypography.bodySemibold)
                                     Text("*")
                                         .foregroundColor(.red)
                                 }
@@ -718,7 +718,7 @@ struct BlasterSelectionRow: View {
                 Spacer()
             }
             .padding(AppSpacing.sm)
-            .background(AppColors.surface)
+            .background(AppColors.cardBackground)
             .cornerRadius(AppSpacing.radiusSmall)
         }
         .buttonStyle(.plain)
@@ -730,6 +730,8 @@ struct DocumentDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let document: Document
     @State private var isLoading = false
+    @State private var showError = false
+    @State private var errorMessage = ""
 
     var body: some View {
         NavigationStack {
@@ -813,12 +815,20 @@ struct DocumentDetailView: View {
 
                     // Actions
                     VStack(spacing: AppSpacing.sm) {
-                        PrimaryButton("documents.view".localized, icon: "eye.fill") {
-                            openDocument()
+                        PrimaryButton(
+                            "documents.view".localized,
+                            icon: "eye.fill",
+                            isLoading: isLoading
+                        ) {
+                            Task {
+                                await openDocument()
+                            }
                         }
 
                         OutlineButton("common.download".localized, icon: "arrow.down.circle") {
-                            downloadDocument()
+                            Task {
+                                await downloadDocument()
+                            }
                         }
                     }
                 }
@@ -832,6 +842,11 @@ struct DocumentDetailView: View {
                     Button("common.done".localized) { dismiss() }
                 }
             }
+            .alert("error.title".localized, isPresented: $showError) {
+                Button("common.ok".localized, role: .cancel) {}
+            } message: {
+                Text(errorMessage)
+            }
         }
     }
 
@@ -841,17 +856,57 @@ struct DocumentDetailView: View {
         return formatter.string(from: date)
     }
 
-    private func openDocument() {
-        // Open document in browser or viewer
-        guard let url = URL(string: document.fileUrl) else { return }
-        UIApplication.shared.open(url)
+    private func openDocument() async {
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            // Get signed URL from API
+            let response: FileURLResponse = try await APIClient.shared.get("/files/\(document.id)/url")
+
+            guard let url = URL(string: response.url) else {
+                errorMessage = "Invalid file URL"
+                showError = true
+                return
+            }
+
+            // Open in Safari
+            await UIApplication.shared.open(url)
+        } catch {
+            errorMessage = "Failed to open document: \(error.localizedDescription)"
+            showError = true
+        }
     }
 
-    private func downloadDocument() {
-        // Download document
-        guard let url = URL(string: document.fileUrl) else { return }
-        UIApplication.shared.open(url)
+    private func downloadDocument() async {
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            // Get signed download URL from API
+            let response: FileURLResponse = try await APIClient.shared.get(
+                "/files/\(document.id)/url",
+                queryItems: [URLQueryItem(name: "download", value: "true")]
+            )
+
+            guard let url = URL(string: response.url) else {
+                errorMessage = "Invalid file URL"
+                showError = true
+                return
+            }
+
+            // Open download URL in Safari
+            await UIApplication.shared.open(url)
+        } catch {
+            errorMessage = "Failed to download document: \(error.localizedDescription)"
+            showError = true
+        }
     }
+}
+
+// MARK: - File URL Response
+struct FileURLResponse: Codable {
+    let url: String
 }
 
 // MARK: - Document Detail Row
@@ -976,44 +1031,6 @@ class DocumentsViewModel: ObservableObject {
         }
 
         return result
-    }
-}
-
-// MARK: - Image Picker
-struct ImagePicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?
-    @Environment(\.dismiss) private var dismiss
-
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = .photoLibrary
-        picker.delegate = context.coordinator
-        return picker
-    }
-
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: ImagePicker
-
-        init(_ parent: ImagePicker) {
-            self.parent = parent
-        }
-
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
-            if let image = info[.originalImage] as? UIImage {
-                parent.image = image
-            }
-            parent.dismiss()
-        }
-
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.dismiss()
-        }
     }
 }
 
