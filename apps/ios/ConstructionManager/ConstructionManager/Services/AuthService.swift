@@ -75,6 +75,7 @@ struct UserProfile: Decodable {
     let phone: String?
     let role: String
     let status: String
+    let isBlaster: Bool?
     let createdAt: Date
     let language: String?
 }
@@ -185,6 +186,7 @@ class AuthService: ObservableObject {
                 phone: profile.phone,
                 role: UserRole(rawValue: profile.role) ?? .fieldWorker,
                 status: UserStatus(rawValue: profile.status) ?? .active,
+                isBlaster: profile.isBlaster,
                 createdAt: profile.createdAt,
                 language: profile.language
             )
