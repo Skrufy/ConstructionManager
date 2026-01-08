@@ -1,0 +1,1686 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "darwin-arm64", "windows", "linux-musl-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// User Roles Enum simulated with String
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  password      String
+  phone         String?
+  role          String    @default("FIELD_WORKER") // ADMIN, PROJECT_MANAGER, DEVELOPER, ARCHITECT, FOREMAN, CREW_LEADER, OFFICE, FIELD_WORKER, VIEWER
+  status        String    @default("ACTIVE")
+  language      String    @default("en") // User's preferred language: "en", "es"
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Supabase Auth integration
+  supabaseId            String?   @unique  // Supabase auth.users UUID
+  passwordResetRequired Boolean   @default(false)
+  migratedAt            DateTime?
+
+  // Relations
+  projectAssignments  ProjectAssignment[]
+  dailyLogs           DailyLog[]
+  timeEntries         TimeEntry[]
+  uploadedFiles       File[]
+  approvedTimeEntries TimeEntry[] @relation("ApprovedBy")
+  warningsReceived    EmployeeWarning[] @relation("WarningsReceived")
+  warningsIssued      EmployeeWarning[] @relation("WarningsIssued")
+
+  // Quality & Safety relations
+  inspectionTemplates InspectionTemplate[]
+  inspections         Inspection[]
+  punchListsCreated   PunchList[]
+  punchItemsAssigned  PunchListItem[] @relation("PunchItemAssignee")
+  punchItemsCompleted PunchListItem[] @relation("PunchItemCompleter")
+  punchItemsVerified  PunchListItem[] @relation("PunchItemVerifier")
+  incidentsReported   IncidentReport[] @relation("IncidentReporter")
+  incidentsClosed     IncidentReport[] @relation("IncidentCloser")
+  safetyMeetings      SafetyMeeting[]
+
+  // Financial relations
+  budgetsCreated      Budget[]
+  invoicesCreated     Invoice[] @relation("InvoiceCreator")
+  invoicesApproved    Invoice[] @relation("InvoiceApprover")
+  changeOrdersRequested ChangeOrder[] @relation("ChangeOrderRequester")
+  changeOrdersApproved  ChangeOrder[] @relation("ChangeOrderApprover")
+  expensesSubmitted   Expense[] @relation("ExpenseSubmitter")
+  expensesApproved    Expense[] @relation("ExpenseApprover")
+
+  // Phase 3 relations
+  schedulesCreated    CrewSchedule[] @relation("ScheduleCreator")
+  crewAssignments     CrewAssignment[] @relation("CrewMember")
+  certifications      UserCertification[]
+  savedReports        SavedReport[]
+
+  // Phase 4 relations
+  droneFlights        DroneFlight[] @relation("FlightLogger")
+
+  // Settings
+  preferences         UserPreferences?
+
+  // Audit logging
+  auditLogs           AuditLog[]
+
+  // Notifications
+  notifications       Notification[]
+
+  // Document splitting
+  splitDraftsCreated  DocumentSplitDraft[] @relation("SplitDraftsCreated")
+
+  // Permission system (Procore-style)
+  companyPermission   UserCompanyPermission?   // Company-level template assignment
+  permissionOverrides UserPermissionOverride?  // Edge case overrides
+
+  // Device tokens for push notifications (iOS/Android)
+  deviceTokens        DeviceToken[]
+
+  // Employee link (if this user has an associated employee record)
+  employee            Employee?
+
+  // Task & RFI relations
+  tasksAssigned       ProjectTask[]     @relation("TaskAssignee")
+  tasksCreated        ProjectTask[]     @relation("TaskCreator")
+  rfisAssigned        RFI[]             @relation("RFIAssignee")
+  rfisSubmitted       RFI[]             @relation("RFISubmitter")
+
+  // Invitations sent by this user
+  invitationsSent     Invitation[]      @relation("InvitedBy")
+
+  // Materials Management
+  materialOrders      MaterialOrder[]   @relation("MaterialOrderedBy")
+  materialUsages      MaterialUsage[]   @relation("MaterialUsedBy")
+
+  // Generated Reports
+  generatedReports    GeneratedReport[] @relation("GeneratedReports")
+}
+
+// User Invitations
+model Invitation {
+  id          String    @id @default(cuid())
+  email       String
+  role        String    @default("FIELD_WORKER") // Role the user will have when they accept
+  invitedById String
+  status      String    @default("PENDING") // PENDING, ACCEPTED, EXPIRED, CANCELLED
+  token       String    @unique // Secure token for invitation link
+  expiresAt   DateTime  // When the invitation expires
+  acceptedAt  DateTime? // When the invitation was accepted
+  acceptedUserId String? // The user ID created when invitation was accepted
+  message     String?   // Optional personalized message
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  invitedBy   User      @relation("InvitedBy", fields: [invitedById], references: [id])
+
+  @@index([email])
+  @@index([token])
+  @@index([status])
+  @@index([invitedById])
+}
+
+model Project {
+  id             String    @id @default(cuid())
+  name           String
+  address        String?
+  gpsLatitude    Float?
+  gpsLongitude   Float?
+  startDate      DateTime?
+  endDate        DateTime?
+  status         String    @default("ACTIVE") // ACTIVE, ON_HOLD, COMPLETED, ARCHIVED
+  visibilityMode String    @default("ALL") // ALL = everyone can view, ASSIGNED_ONLY = only assigned users
+  description    String?
+  clientId       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  client         Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  assignments    ProjectAssignment[]
+  labels         Label[]
+  dailyLogs      DailyLog[]
+  timeEntries    TimeEntry[]
+  equipment      EquipmentAssignment[]
+  files          File[]
+  warnings       EmployeeWarning[]
+
+  // Quality & Safety relations
+  inspections    Inspection[]
+  punchLists     PunchList[]
+  incidents      IncidentReport[]
+  safetyMeetings SafetyMeeting[]
+
+  // Financial relations
+  budget         Budget?
+  invoices       Invoice[]
+  changeOrders   ChangeOrder[]
+  expenses       Expense[]
+
+  // Phase 3 relations
+  subcontractors SubcontractorAssignment[]
+  schedules      CrewSchedule[]
+
+  // Phase 4 relations
+  droneFlights     DroneFlight[]
+  droneMaps        DroneMap[]
+  droneDeploySyncs DroneDeploySync[]
+
+  // Document splitting
+  splitDrafts      DocumentSplitDraft[]
+
+  // Task & RFI relations
+  tasks            ProjectTask[]
+  rfis             RFI[]
+
+  // Materials Management
+  materials        Material[]
+  materialOrders   MaterialOrder[]
+  materialUsages   MaterialUsage[]
+
+  // Generated Reports
+  generatedReports GeneratedReport[] @relation("ProjectReports")
+}
+
+model ProjectAssignment {
+  id                  String   @id @default(cuid())
+  userId              String
+  projectId           String
+  roleOverride        String?  // DEPRECATED: Use projectTemplateId instead
+  projectTemplateId   String?  // Reference to project-scoped PermissionTemplate
+  assignedBy          String?  // Who made this assignment
+  assignedAt          DateTime @default(now())
+  createdAt           DateTime @default(now())
+
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project         Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectTemplate PermissionTemplate? @relation(fields: [projectTemplateId], references: [id])
+
+  @@unique([userId, projectId])
+  @@index([projectTemplateId])
+}
+
+model Label {
+  id        String   @id @default(cuid())
+  category  String   // ACTIVITY, LOCATION_BUILDING, LOCATION_FLOOR, LOCATION_ZONE, LOCATION_ROOM, STATUS, MATERIAL, ISSUE, VISITOR
+  name      String
+  projectId String?  // null = global label
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Relations for daily log entries
+  activityEntries    DailyLogEntry[] @relation("ActivityLabel")
+  statusEntries      DailyLogEntry[] @relation("StatusLabel")
+  materialEntries    DailyLogMaterial[]
+  issueEntries       DailyLogIssue[]
+  visitorEntries     DailyLogVisitor[]
+}
+
+model DailyLog {
+  id           String   @id @default(cuid())
+  projectId    String
+  date         DateTime
+  submittedBy  String
+  weatherData  Json?    // Weather data object
+  weatherDelay Boolean  @default(false) // Was there a weather delay?
+  weatherDelayNotes String? // Notes about the weather delay
+  crewCount    Int      @default(0)
+  totalHours   Float    @default(0)
+  notes        String?
+  status       String   @default("DRAFT") // DRAFT, SUBMITTED, APPROVED
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  project      Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  submitter    User             @relation(fields: [submittedBy], references: [id])
+  entries      DailyLogEntry[]
+  materials    DailyLogMaterial[]
+  issues       DailyLogIssue[]
+  visitors     DailyLogVisitor[]
+  photos       File[]
+
+  // Materials Management
+  materialUsages MaterialUsage[]
+
+  @@index([projectId, date])
+  @@index([submittedBy, date])
+  @@index([status, date])
+}
+
+model DailyLogEntry {
+  id              String   @id @default(cuid())
+  dailyLogId      String
+  activityLabelId String
+  locationLabels  Json?    // Array of location label IDs
+  statusLabelId   String?
+  percentComplete Int?
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  dailyLog      DailyLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
+  activityLabel Label    @relation("ActivityLabel", fields: [activityLabelId], references: [id])
+  statusLabel   Label?   @relation("StatusLabel", fields: [statusLabelId], references: [id])
+}
+
+model DailyLogMaterial {
+  id             String   @id @default(cuid())
+  dailyLogId     String
+  materialLabelId String
+  quantity       Float
+  unit           String?
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  dailyLog      DailyLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
+  materialLabel Label    @relation(fields: [materialLabelId], references: [id])
+}
+
+model DailyLogIssue {
+  id           String   @id @default(cuid())
+  dailyLogId   String
+  issueLabelId String
+  delayHours   Float?
+  description  String?
+  createdAt    DateTime @default(now())
+
+  dailyLog   DailyLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
+  issueLabel Label    @relation(fields: [issueLabelId], references: [id])
+}
+
+model DailyLogVisitor {
+  id             String   @id @default(cuid())
+  dailyLogId     String
+  visitorLabelId String
+  visitTime      DateTime?
+  result         String?   // PASSED, FAILED, NA
+  notes          String?
+  createdAt      DateTime  @default(now())
+
+  dailyLog     DailyLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
+  visitorLabel Label    @relation(fields: [visitorLabelId], references: [id])
+}
+
+model TimeEntry {
+  id            String    @id @default(cuid())
+  userId        String
+  projectId     String
+  clockIn       DateTime
+  clockOut      DateTime?
+  breakMinutes  Int       @default(0) // Break time in minutes
+  gpsInLat      Float?
+  gpsInLng      Float?
+  gpsOutLat     Float?
+  gpsOutLng     Float?
+  status        String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedBy    String?
+  notes         String?
+  // QuickBooks sync fields
+  qbSynced      Boolean   @default(false)
+  qbSyncedAt    DateTime?
+  qbTimeActivityId String? // QuickBooks TimeActivity ID after sync
+  qbSyncError   String?   // Last sync error message if any
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  approver  User?    @relation("ApprovedBy", fields: [approvedBy], references: [id])
+
+  @@index([userId, clockIn])
+  @@index([projectId, clockIn])
+  @@index([status, clockIn])
+}
+
+model Equipment {
+  id            String   @id @default(cuid())
+  name          String
+  type          String
+  samsaraId     String?  // External ID for Samsara integration
+  status        String   @default("AVAILABLE") // AVAILABLE, IN_USE, MAINTENANCE, OUT_OF_SERVICE
+  currentLat    Float?
+  currentLng    Float?
+  lastUpdated   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  assignments   EquipmentAssignment[]
+  logs          EquipmentLog[]
+  serviceLogs   ServiceLog[]
+}
+
+model EquipmentAssignment {
+  id          String   @id @default(cuid())
+  equipmentId String
+  projectId   String
+  startDate   DateTime
+  endDate     DateTime?
+  createdAt   DateTime @default(now())
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model EquipmentLog {
+  id          String   @id @default(cuid())
+  equipmentId String
+  date        DateTime
+  hoursUsed   Float?
+  fuelUsed    Float?
+  gpsData     Json?    // GPS tracking data
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+}
+
+// Equipment Service/Maintenance Logs
+model ServiceLog {
+  id               String    @id @default(cuid())
+  equipmentId      String
+  serviceType      String    // OIL_CHANGE, FILTER_REPLACEMENT, INSPECTION, REPAIR, TIRE_SERVICE, BRAKE_SERVICE, HYDRAULIC_SERVICE, ELECTRICAL, SCHEDULED_MAINTENANCE, OTHER
+  date             DateTime
+  meterReading     Float?    // Hours or miles at time of service
+  cost             Float?
+  partsUsed        String?   // Description of parts used
+  technician       String?   // Who performed the service
+  notes            String?
+  nextServiceDue   DateTime? // When next service is recommended
+  nextServiceHours Float?    // Next service due at this meter reading
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@index([equipmentId])
+  @@index([serviceType])
+  @@index([date])
+}
+
+model File {
+  id            String   @id @default(cuid())
+  projectId     String
+  dailyLogId    String?
+  name          String
+  type          String   // image, document, video
+  storagePath   String
+  uploadedBy    String
+  gpsLatitude   Float?
+  gpsLongitude  Float?
+  takenAt       DateTime?
+  createdAt     DateTime @default(now())
+
+  // Revision tracking
+  currentVersion Int      @default(1)
+  isLatest       Boolean  @default(true)
+  parentFileId   String?  // Reference to parent file for revisions
+  description    String?
+  tags           Json?    // Array of tags
+  category       String?  // DRAWINGS, SPECIFICATIONS, CONTRACTS, PHOTOS, REPORTS, OTHER
+  source         String   @default("UPLOAD") // UPLOAD, DRONEDEPLOY, SAMSARA, QUICKBOOKS
+  pageCount      Int?     // Number of pages (for PDFs)
+  isAdminOnly    Boolean  @default(false) // If true, only admins can view this document
+
+  project       Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  dailyLog      DailyLog?         @relation(fields: [dailyLogId], references: [id])
+  uploader      User              @relation(fields: [uploadedBy], references: [id])
+  revisions     DocumentRevision[]
+  annotations   DocumentAnnotation[]
+  droneExports  DroneDeployExport[] // Files imported from DroneDeploy
+  metadata      DocumentMetadata?   // OCR-extracted metadata
+  splitDrafts   DocumentSplitDraft[] @relation("SplitDraftOriginal") // If this file is an original for splitting
+
+  @@index([projectId, category])
+  @@index([projectId, createdAt])
+}
+
+// Document Revision History
+model DocumentRevision {
+  id            String   @id @default(cuid())
+  fileId        String
+  version       Int
+  storagePath   String
+  changeNotes   String?
+  uploadedBy    String
+  fileSize      Int?
+  checksum      String?  // For integrity verification
+  createdAt     DateTime @default(now())
+
+  file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+}
+
+// Document Annotations/Markups
+model DocumentAnnotation {
+  id            String   @id @default(cuid())
+  fileId        String
+  annotationType String  // COMMENT, MARKUP, HIGHLIGHT, MEASUREMENT, CALLOUT
+  content       Json     // Annotation data (position, text, shape, etc.)
+  pageNumber    Int?     // For PDFs
+  createdBy     String
+  resolvedAt    DateTime?
+  resolvedBy    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+}
+
+// Document Split Draft - tracks multi-page PDF splitting progress
+model DocumentSplitDraft {
+  id             String   @id @default(cuid())
+  projectId      String
+  uploaderId     String
+  originalFileId String   // Reference to the uploaded original PDF
+  status         String   @default("DRAFT") // DRAFT, PROCESSING, COMPLETED, CANCELLED
+  totalPages     Int
+  verifiedCount  Int      @default(0)
+
+  // Store page data as JSON array
+  // Each page: { pageNumber, thumbnailPath, drawingNumber, sheetTitle, discipline, revision, scale, confidence, verified, skipped }
+  pages          Json
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploader       User     @relation("SplitDraftsCreated", fields: [uploaderId], references: [id])
+  originalFile   File     @relation("SplitDraftOriginal", fields: [originalFileId], references: [id])
+
+  @@index([uploaderId, status])
+  @@index([projectId])
+}
+
+// Employee Warning/Discipline System
+model EmployeeWarning {
+  id              String   @id @default(cuid())
+  employeeId      String
+  issuedById      String
+  projectId       String?
+  warningType     String   // TARDINESS, SAFETY_VIOLATION, INSUBORDINATION, POOR_WORK_QUALITY, NO_SHOW, DRESS_CODE, EQUIPMENT_MISUSE, UNPROFESSIONAL_CONDUCT
+  severity        String   // VERBAL, WRITTEN, FINAL
+  description     String
+  incidentDate    DateTime
+  witnessNames    String?  // Optional witness names
+  actionRequired  String?  // Any required corrective action
+  acknowledged    Boolean  @default(false)
+  acknowledgedAt  DateTime?
+  status          String   @default("ACTIVE") // ACTIVE, RESOLVED, APPEALED, VOID
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  employee  User     @relation("WarningsReceived", fields: [employeeId], references: [id], onDelete: Cascade)
+  issuedBy  User     @relation("WarningsIssued", fields: [issuedById], references: [id])
+  project   Project? @relation(fields: [projectId], references: [id])
+}
+
+// ============================================
+// QUALITY & SAFETY MODULE
+// ============================================
+
+// Inspection Checklists
+model InspectionTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  category    String   // SAFETY, QUALITY, ENVIRONMENTAL, PRE_WORK
+  items       Json     // Array of checklist items
+  isActive    Boolean  @default(true)
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creator     User         @relation(fields: [createdBy], references: [id])
+  inspections Inspection[]
+}
+
+model Inspection {
+  id           String   @id @default(cuid())
+  templateId   String?  // Optional - null when scheduling without template
+  projectId    String
+  inspectorId  String
+  date         DateTime
+  location     String?
+  responses    Json?    // Optional - null when scheduling, filled when completing
+  overallStatus String  @default("SCHEDULED") // SCHEDULED, PENDING, PASSED, FAILED, REQUIRES_FOLLOWUP
+  notes        String?
+  signatureUrl String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  template  InspectionTemplate? @relation(fields: [templateId], references: [id])
+  project   Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  inspector User               @relation(fields: [inspectorId], references: [id])
+  photos    InspectionPhoto[]
+
+  @@index([projectId, date])
+  @@index([projectId, overallStatus])
+}
+
+model InspectionPhoto {
+  id           String   @id @default(cuid())
+  inspectionId String
+  storagePath  String
+  caption      String?
+  itemIndex    Int?     // Which checklist item this photo relates to
+  createdAt    DateTime @default(now())
+
+  inspection Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+}
+
+// Punch Lists
+model PunchList {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  description String?
+  dueDate     DateTime?
+  status      String   @default("OPEN") // OPEN, IN_PROGRESS, COMPLETED
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator User            @relation(fields: [createdBy], references: [id])
+  items   PunchListItem[]
+}
+
+model PunchListItem {
+  id           String   @id @default(cuid())
+  punchListId  String
+  description  String
+  location     String?
+  trade        String?  // Which trade is responsible
+  priority     String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  status       String   @default("OPEN") // OPEN, IN_PROGRESS, COMPLETED, VERIFIED
+  assignedTo   String?
+  dueDate      DateTime?
+  completedAt  DateTime?
+  completedBy  String?
+  verifiedAt   DateTime?
+  verifiedBy   String?
+  photos       Json?    // Array of photo paths
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  punchList  PunchList @relation(fields: [punchListId], references: [id], onDelete: Cascade)
+  assignee   User?     @relation("PunchItemAssignee", fields: [assignedTo], references: [id])
+  completer  User?     @relation("PunchItemCompleter", fields: [completedBy], references: [id])
+  verifier   User?     @relation("PunchItemVerifier", fields: [verifiedBy], references: [id])
+}
+
+// Incident Reports
+model IncidentReport {
+  id            String   @id @default(cuid())
+  projectId     String
+  reportedBy    String
+  incidentDate  DateTime
+  incidentTime  String?
+  location      String
+  incidentType  String   // INJURY, NEAR_MISS, PROPERTY_DAMAGE, ENVIRONMENTAL, OTHER
+  severity      String   // MINOR, MODERATE, SERIOUS, CRITICAL
+  description   String
+  rootCause     String?
+  immediateActions String?
+  witnesses     Json?    // Array of witness info
+  injuredParties Json?   // Array of injured party info
+  photos        Json?    // Array of photo paths
+  status        String   @default("REPORTED") // REPORTED, UNDER_INVESTIGATION, CLOSED
+  investigationNotes String?
+  correctiveActions String?
+  closedAt      DateTime?
+  closedBy      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reporter User    @relation("IncidentReporter", fields: [reportedBy], references: [id])
+  closer   User?   @relation("IncidentCloser", fields: [closedBy], references: [id])
+
+  @@index([projectId, status])
+  @@index([projectId, incidentDate])
+}
+
+// Safety Meetings
+model SafetyMeeting {
+  id          String   @id @default(cuid())
+  projectId   String?  // Optional - can be "Other" or no project
+  conductedBy String
+  date        DateTime
+  time        String?  // Time of meeting (e.g., "08:00")
+  location    String?  // City/location where meeting was held
+  topic       String
+  topicId     String?  // Optional link to SafetyTopic
+  description String?
+  duration    Int?     // Duration in minutes
+  attendees   Json     // Legacy: Array of attendee info (for backwards compatibility)
+  signatureSheet String? // Path to signature sheet image
+  leaderSignature String? // Path to leader's signature image
+  photoUrl    String?  // Path to group photo
+  notes       String?
+  followUpItems Json?   // Array of follow-up items
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project?          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  conductor   User              @relation(fields: [conductedBy], references: [id])
+  safetyTopic SafetyTopic?      @relation(fields: [topicId], references: [id])
+  meetingAttendees MeetingAttendee[]
+
+  @@index([projectId, date])
+  @@index([conductedBy, date])
+}
+
+// Employees (workers who may or may not have user accounts)
+model Employee {
+  id            String   @id @default(cuid())
+  name          String
+  email         String?
+  phone         String?
+  company       String?  // For external contractors
+  jobTitle      String?
+  userId        String?  @unique  // Optional link to User account
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user               User?              @relation(fields: [userId], references: [id])
+  meetingAttendances MeetingAttendee[]
+
+  @@index([name])
+  @@index([isActive])
+  @@index([email]) // For duplicate checking on create/update
+}
+
+// Junction table for safety meeting attendance
+model MeetingAttendee {
+  id            String    @id @default(cuid())
+  meetingId     String
+  employeeId    String
+  attended      Boolean   @default(true)
+  signatureUrl  String?   // Path to signature image (if attendee signs)
+  signedAt      DateTime?
+  createdAt     DateTime  @default(now())
+
+  meeting       SafetyMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  employee      Employee      @relation(fields: [employeeId], references: [id])
+
+  @@unique([meetingId, employeeId])
+  @@index([meetingId])
+  @@index([employeeId])
+}
+
+// Standardized safety topics
+model SafetyTopic {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  category    String?  // PPE, HAZARDS, PROCEDURES, EMERGENCY, EQUIPMENT, GENERAL
+  isDefault   Boolean  @default(false)  // Pre-seeded topics
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  meetings    SafetyMeeting[]
+
+  @@index([isActive, sortOrder])
+}
+
+// ============================================
+// FINANCIAL TRACKING MODULE
+// ============================================
+
+// Project Budgets
+model Budget {
+  id              String   @id @default(cuid())
+  projectId       String   @unique
+  totalBudget     Float
+  laborBudget     Float?
+  materialsBudget Float?
+  equipmentBudget Float?
+  subcontractorBudget Float?
+  overheadBudget  Float?
+  contingency     Float?
+  notes           String?
+  createdBy       String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator User    @relation(fields: [createdBy], references: [id])
+}
+
+// Invoices
+model Invoice {
+  id            String   @id @default(cuid())
+  projectId     String
+  invoiceNumber String
+  vendorName    String
+  vendorId      String?  // Optional link to vendor/subcontractor
+  invoiceDate   DateTime
+  dueDate       DateTime?
+  amount        Float
+  taxAmount     Float?
+  totalAmount   Float
+  category      String   // LABOR, MATERIALS, EQUIPMENT, SUBCONTRACTOR, OVERHEAD, OTHER
+  description   String?
+  status        String   @default("PENDING") // PENDING, APPROVED, PAID, DISPUTED, VOID
+  paidDate      DateTime?
+  paidAmount    Float?
+  attachmentUrl String?
+  notes         String?
+  createdBy     String
+  approvedBy    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator  User    @relation("InvoiceCreator", fields: [createdBy], references: [id])
+  approver User?   @relation("InvoiceApprover", fields: [approvedBy], references: [id])
+
+  @@index([projectId, status])
+  @@index([projectId, invoiceDate])
+}
+
+// Change Orders
+model ChangeOrder {
+  id              String   @id @default(cuid())
+  projectId       String
+  changeOrderNumber String
+  title           String
+  description     String
+  reason          String   // CLIENT_REQUEST, DESIGN_CHANGE, UNFORESEEN_CONDITIONS, ERROR_CORRECTION, SCOPE_CHANGE
+  requestedBy     String
+  requestDate     DateTime
+  amount          Float
+  daysImpact      Int?     // Schedule impact in days
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED, VOID
+  approvedBy      String?
+  approvedDate    DateTime?
+  attachments     Json?    // Array of attachment URLs
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requester User    @relation("ChangeOrderRequester", fields: [requestedBy], references: [id])
+  approver  User?   @relation("ChangeOrderApprover", fields: [approvedBy], references: [id])
+
+  @@index([projectId, status])
+}
+
+// Expenses
+model Expense {
+  id            String   @id @default(cuid())
+  projectId     String
+  date          DateTime
+  category      String   // LABOR, MATERIALS, EQUIPMENT, FUEL, SUPPLIES, MEALS, TRAVEL, OTHER
+  vendor        String?
+  description   String
+  amount        Float
+  paymentMethod String?  // CASH, CHECK, CREDIT_CARD, COMPANY_CARD
+  receiptUrl    String?
+  billable      Boolean  @default(true)
+  status        String   @default("PENDING") // PENDING, APPROVED, REIMBURSED, REJECTED
+  submittedBy   String
+  approvedBy    String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  submitter User    @relation("ExpenseSubmitter", fields: [submittedBy], references: [id])
+  approver  User?   @relation("ExpenseApprover", fields: [approvedBy], references: [id])
+
+  @@index([projectId, status])
+  @@index([projectId, date])
+}
+
+// ============================================
+// PHASE 3: SUBCONTRACTOR DIRECTORY
+// ============================================
+
+model Subcontractor {
+  id              String   @id @default(cuid())
+  companyName     String
+  contactName     String?
+  email           String?
+  phone           String?
+  address         String?
+  city            String?
+  state           String?
+  zip             String?
+  trades          Json     // Array of trade specialties
+  licenseNumber   String?
+  insuranceExpiry DateTime?
+  rating          Float?   // 1-5 rating
+  status          String   @default("ACTIVE") // ACTIVE, INACTIVE, PREFERRED, BLACKLISTED
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  projects        SubcontractorAssignment[]
+  certifications  SubcontractorCertification[]
+}
+
+model SubcontractorAssignment {
+  id              String   @id @default(cuid())
+  subcontractorId String
+  projectId       String
+  startDate       DateTime?
+  endDate         DateTime?
+  contractAmount  Float?
+  status          String   @default("ACTIVE") // ACTIVE, COMPLETED, TERMINATED
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  subcontractor Subcontractor @relation(fields: [subcontractorId], references: [id], onDelete: Cascade)
+  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model SubcontractorCertification {
+  id              String   @id @default(cuid())
+  subcontractorId String
+  certType        String   // LICENSE, INSURANCE, SAFETY, OSHA, BOND, OTHER
+  certName        String
+  certNumber      String?
+  issueDate       DateTime?
+  expiryDate      DateTime?
+  documentUrl     String?
+  status          String   @default("VALID") // VALID, EXPIRED, EXPIRING_SOON, PENDING
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  subcontractor Subcontractor @relation(fields: [subcontractorId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// CLIENT MANAGEMENT
+// ============================================
+
+model Client {
+  id              String   @id @default(cuid())
+  companyName     String
+  contactName     String?
+  email           String?
+  phone           String?
+  address         String?
+  city            String?
+  state           String?
+  zip             String?
+  status          String   @default("ACTIVE") // ACTIVE, INACTIVE
+  notes           String?
+  website         String?
+  industry        String?  // COMMERCIAL, RESIDENTIAL, INDUSTRIAL, GOVERNMENT, HEALTHCARE, EDUCATION
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  projects        Project[]
+
+  @@index([status])
+  @@index([companyName])
+}
+
+// ============================================
+// PHASE 3: CREW SCHEDULING
+// ============================================
+
+model CrewSchedule {
+  id          String   @id @default(cuid())
+  projectId   String
+  date        DateTime
+  startTime   String?  // "08:00"
+  endTime     String?  // "17:00"
+  notes       String?
+  status      String   @default("SCHEDULED") // SCHEDULED, CONFIRMED, CANCELLED
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator     User                 @relation("ScheduleCreator", fields: [createdBy], references: [id])
+  assignments CrewAssignment[]
+
+  @@index([projectId, date])
+}
+
+model CrewAssignment {
+  id              String   @id @default(cuid())
+  scheduleId      String
+  userId          String
+  role            String?  // What role they'll play on that day
+  confirmedAt     DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  schedule CrewSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  user     User         @relation("CrewMember", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// PHASE 3: CERTIFICATION & LICENSE TRACKING
+// ============================================
+
+model UserCertification {
+  id              String   @id @default(cuid())
+  userId          String
+  certType        String   // LICENSE, CERTIFICATION, TRAINING, OSHA, SAFETY, EQUIPMENT, OTHER
+  certName        String
+  certNumber      String?
+  issuingAuthority String?
+  issueDate       DateTime?
+  expiryDate      DateTime?
+  documentUrl     String?
+  status          String   @default("VALID") // VALID, EXPIRED, EXPIRING_SOON, PENDING_RENEWAL
+  reminderSent    Boolean  @default(false)
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiryDate])
+  @@index([status, expiryDate])
+}
+
+// ============================================
+// PHASE 3: CUSTOM REPORTS
+// ============================================
+
+model SavedReport {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  reportType  String   // LABOR, EQUIPMENT, SAFETY, FINANCIAL, PROJECT, CUSTOM
+  filters     Json     // Filter configuration object
+  columns     Json?    // Array of columns to include
+  groupBy     String?  // Field to group by
+  sortBy      String?  // Field to sort by
+  sortOrder   String?  // ASC, DESC
+  chartType   String?  // BAR, LINE, PIE, TABLE
+  isPublic    Boolean  @default(false)
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creator User @relation(fields: [createdBy], references: [id])
+}
+
+// ============================================
+// PHASE 4: DRONEDEPLOY INTEGRATION
+// ============================================
+
+// Drone Flight Records
+model DroneFlight {
+  id          String   @id @default(cuid())
+  projectId   String
+  flightDate  DateTime
+  pilotName   String?
+  droneModel  String?
+  duration    Int?     // Duration in minutes
+  area        Float?   // Area covered in acres
+  images      Int?     // Number of images captured
+  mapUrl      String?  // Link to DroneDeploy map
+  status      String   @default("PENDING") // PENDING, UPLOADED, PROCESSING, PROCESSED, FAILED
+  notes       String?
+  loggedBy    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  logger  User    @relation("FlightLogger", fields: [loggedBy], references: [id])
+  maps    DroneMap[]
+}
+
+// Drone Maps/Orthomosaics
+model DroneMap {
+  id          String   @id @default(cuid())
+  flightId    String?
+  projectId   String
+  name        String
+  mapType     String   // ORTHOMOSAIC, 3D_MODEL, ELEVATION, THERMAL
+  resolution  String?  // e.g., "1.5 cm/pixel"
+  embedUrl    String?
+  thumbnailUrl String?
+  processedAt DateTime?
+  status      String   @default("PROCESSING") // PROCESSING, READY, FAILED
+  metadata    Json?    // Additional map data
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  flight  DroneFlight? @relation(fields: [flightId], references: [id])
+  project Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// DroneDeploy Sync - Maps DroneDeploy plans to local projects
+model DroneDeploySync {
+  id                String   @id @default(cuid())
+  projectId         String
+  droneDeployPlanId String   @unique // DroneDeploy Plan ID
+  droneDeployPlanName String? // Name as it appears in DroneDeploy
+  syncEnabled       Boolean  @default(true)
+  lastSyncAt        DateTime?
+  lastSyncStatus    String?  // SUCCESS, FAILED, PARTIAL
+  lastSyncError     String?
+  autoSync          Boolean  @default(true) // Automatically sync new exports
+  syncExports       Boolean  @default(true) // Sync orthomosaics/3D models as documents
+  syncAnnotations   Boolean  @default(false) // Sync annotations
+  metadata          Json?    // Additional DroneDeploy plan metadata
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  exports DroneDeployExport[]
+
+  @@index([projectId])
+}
+
+// Individual exports from DroneDeploy
+model DroneDeployExport {
+  id               String   @id @default(cuid())
+  syncId           String
+  droneDeployId    String   @unique // DroneDeploy export/asset ID
+  exportType       String   // ORTHOMOSAIC, 3D_MODEL, ELEVATION, THERMAL, PLANT_HEALTH, POINT_CLOUD
+  name             String
+  description      String?
+  resolution       String?  // e.g., "1.5 cm/pixel"
+  capturedAt       DateTime? // When the flight/capture occurred
+  processedAt      DateTime? // When DroneDeploy finished processing
+  downloadUrl      String?  // Direct download URL
+  embedUrl         String?  // Embeddable viewer URL
+  thumbnailUrl     String?
+  fileSize         Int?     // Size in bytes
+  status           String   @default("PENDING") // PENDING, DOWNLOADING, COMPLETED, FAILED
+  localFileId      String?  // Link to File record once downloaded
+  metadata         Json?    // Additional export metadata
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  sync      DroneDeploySync @relation(fields: [syncId], references: [id], onDelete: Cascade)
+  localFile File?           @relation(fields: [localFileId], references: [id])
+
+  @@index([syncId])
+  @@index([exportType])
+}
+
+// ============================================
+// SETTINGS & PREFERENCES
+// ============================================
+
+// Company-wide settings (singleton per company/instance)
+model CompanySettings {
+  id                    String   @id @default(cuid())
+  companyName           String   @default("Construction Company")
+  companyLogo           String?  // URL to company logo image
+  companyFavicon        String?  // URL to company favicon image
+  timezone              String   @default("America/New_York")
+  dateFormat            String   @default("MM/DD/YYYY")
+  currency              String   @default("USD")
+
+  // Module toggles - which features are enabled
+  moduleProjects        Boolean  @default(true)
+  moduleDailyLogs       Boolean  @default(true)
+  moduleTimeTracking    Boolean  @default(true)
+  moduleTasks           Boolean  @default(true)
+  moduleScheduling      Boolean  @default(true)
+  moduleEquipment       Boolean  @default(true)
+  moduleDocuments       Boolean  @default(true)
+  moduleDrawings        Boolean  @default(true)
+  moduleSafety          Boolean  @default(true)
+  moduleFinancials      Boolean  @default(true)
+  moduleReports         Boolean  @default(true)
+  moduleAnalytics       Boolean  @default(true)
+  moduleSubcontractors  Boolean  @default(true)
+  moduleCertifications  Boolean  @default(true)
+  moduleDroneDeploy     Boolean  @default(true)
+  moduleApprovals       Boolean  @default(true)
+  moduleWarnings        Boolean  @default(true)
+  moduleClients         Boolean  @default(true)
+  moduleMaterials       Boolean  @default(true)
+
+  // Legacy Field Worker overrides (kept for backwards compatibility)
+  allowFieldWorkerSafety      Boolean  @default(false)
+  allowFieldWorkerScheduling  Boolean  @default(false)
+  fieldWorkerDailyLogAccess   String   @default("ASSIGNED_PROJECTS")
+
+  // Role-based module visibility overrides (JSON object)
+  // Structure: { "ROLE_NAME": { "moduleKey": boolean, ... }, ... }
+  // Example: { "MECHANIC": { "moduleEquipment": true, "moduleProjects": false } }
+  roleModuleOverrides         Json     @default("{}")
+
+  // Role-based data access settings (JSON object)
+  // Structure: { "ROLE_NAME": { "dailyLogAccess": "ALL"|"ASSIGNED_PROJECTS"|"OWN_ONLY", ... }, ... }
+  roleDataAccess              Json     @default("{}")
+
+  // Feature settings
+  requireGpsClockIn     Boolean  @default(false)
+  requirePhotoDaily     Boolean  @default(false)
+  autoApproveTimesheet  Boolean  @default(false)
+  dailyLogReminders     Boolean  @default(true)
+  certExpiryAlertDays   Int      @default(30)
+  maxFileUploadMB       Int      @default(50)
+
+  // Daily log settings
+  activitiesEnabled     Boolean  @default(true) // Enable activities section in daily logs
+  dailyLogApprovalRequired Boolean @default(true) // Whether daily logs require approval before being finalized
+  hideBuildingInfo      Boolean  @default(false) // Hide building/floor/room/zone fields across the app
+
+  // Document storage settings
+  autoDeleteDocuments       Boolean  @default(false)
+  autoDeleteDocumentsYears  Int      @default(2)
+
+  // Notification settings
+  emailNotifications    Boolean  @default(true)
+  pushNotifications     Boolean  @default(false)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// User-specific preferences
+model UserPreferences {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+
+  // Display preferences
+  theme                 String   @default("light") // light, dark, system
+  sidebarCollapsed      Boolean  @default(false)
+  dashboardLayout       Json?    // Custom dashboard widget layout
+  defaultProjectId      String?  // Default project to show
+  sidebarOrder          Json?    // Custom sidebar navigation order (array of hrefs)
+
+  // Notification preferences
+  emailDailyDigest      Boolean  @default(true)
+  emailApprovals        Boolean  @default(true)
+  emailMentions         Boolean  @default(true)
+  emailCertExpiry       Boolean  @default(true)
+  pushEnabled           Boolean  @default(false)
+
+  // Display settings
+  itemsPerPage          Int      @default(25)
+  showCompletedTasks    Boolean  @default(true)
+  defaultView           String   @default("list") // list, grid, calendar
+
+  // Mobile-specific settings (synced across devices)
+  mobileModuleVisibility Json?   // Which modules to show/hide on mobile app
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// SAVED ADDRESSES LIBRARY
+// ============================================
+
+model SavedAddress {
+  id              String   @id @default(cuid())
+
+  // Address fields
+  fullAddress     String   // Complete formatted address
+  streetAddress   String?  // Street number and name
+  city            String?
+  state           String?
+  zipCode         String?
+  country         String?  @default("USA")
+
+  // GPS coordinates (if available)
+  latitude        Float?
+  longitude       Float?
+
+  // Metadata
+  label           String?  // User-friendly label (e.g., "Main Office", "Warehouse")
+  type            String   @default("JOBSITE") // JOBSITE, OFFICE, WAREHOUSE, SUBCONTRACTOR, OTHER
+  usageCount      Int      @default(1) // Track how often this address is used
+  lastUsedAt      DateTime @default(now())
+
+  // Audit
+  createdBy       String?  // User who added this address
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([fullAddress])
+  @@index([city])
+  @@index([usageCount])
+}
+
+// ============================================
+// AUDIT LOGGING
+// ============================================
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  action        String   // CREATE, UPDATE, DELETE, VIEW, EXPORT, APPROVE, REJECT, LOGIN, etc.
+  resource      String   // PROJECT, DAILY_LOG, TIME_ENTRY, EQUIPMENT, DOCUMENT, etc.
+  resourceId    String?  // ID of the affected resource
+  userId        String?  // User who performed the action
+  userEmail     String?  // Email of the user (for historical tracking)
+  userRole      String?  // Role at time of action
+  projectId     String?  // Associated project if applicable
+  ipAddress     String?  // Client IP address
+  userAgent     String?  // Client user agent
+  details       Json?    // Additional details object
+  oldValues     Json?    // Previous values (for updates)
+  newValues     Json?    // New values (for creates/updates)
+  success       Boolean  @default(true)
+  errorMessage  String?  // Error message if action failed
+  timestamp     DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([resource, resourceId])
+  @@index([projectId])
+  @@index([timestamp])
+  @@index([action])
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id          String    @id @default(cuid())
+  userId      String
+  type        String    // API_DISCONNECT, API_RECONNECT, SYSTEM_ALERT, CERT_EXPIRING, APPROVAL_NEEDED
+  title       String
+  message     String
+  severity    String    @default("INFO")  // INFO, WARNING, ERROR, CRITICAL
+  category    String    @default("SYSTEM") // SYSTEM, API, APPROVAL, SAFETY
+  data        Json?     // Additional structured data
+  read        Boolean   @default(false)
+  readAt      DateTime?
+  actionUrl   String?   // Optional URL for action
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
+}
+
+// ============================================
+// INTEGRATION & SECURITY MODELS
+// ============================================
+
+// OAuth State for CSRF protection
+model OAuthState {
+  id        String   @id @default(cuid())
+  state     String   @unique
+  userId    String
+  provider  String   // e.g., 'quickbooks', 'google'
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([state])
+  @@index([userId, provider])
+}
+
+// Integration Credentials (encrypted token storage)
+model IntegrationCredential {
+  id           String   @id @default(cuid())
+  provider     String   // e.g., 'quickbooks', 'samsara', 'dronedeploy'
+  accessToken  String   // Encrypted
+  refreshToken String?  // Encrypted
+  tokenType    String   @default("Bearer")
+  expiresAt    DateTime?
+  realmId      String?  // For QuickBooks company ID
+  scope        String?
+  metadata     Json?    // Additional provider-specific data
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([provider])
+}
+
+// Organization Settings
+model OrgSettings {
+  id            String   @id @default(cuid())
+  ocrEnabled    Boolean  @default(true)
+  ocrProvider   String   @default("openai") // openai, google, none
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  updatedBy     String?
+}
+
+// OCR-extracted Document Metadata
+model DocumentMetadata {
+  id            String   @id @default(cuid())
+  fileId        String   @unique
+
+  // Drawing Information
+  drawingNumber String?
+  sheetNumber   String?
+  sheetTitle    String?
+  revision      String?
+  discipline    String?  // ARCHITECTURAL, STRUCTURAL, MECHANICAL, ELECTRICAL, PLUMBING, CIVIL
+  scale         String?
+
+  // Location Information
+  building      String?
+  floor         String?
+  zone          String?
+  room          String?
+
+  // Date Information
+  documentDate  DateTime?
+  revisionDate  DateTime?
+
+  // OCR Processing Info
+  ocrProvider   String?  // openai, google, etc.
+  ocrConfidence Float?   // 0-1 confidence score
+  rawResponse   Json?    // Raw OCR response for debugging
+
+  createdAt     DateTime @default(now())
+
+  file          File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+}
+
+// Background OCR Job - tracks async OCR processing for large documents
+model OcrJob {
+  id            String   @id @default(cuid())
+  fileId        String?  // Optional - for existing files
+  userId        String   // User who initiated the job
+  projectId     String?  // Optional project context
+
+  // Job status
+  status        String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  progress      Int      @default(0) // 0-100 percentage
+  totalPages    Int      @default(1)
+  processedPages Int     @default(0)
+
+  // Input data
+  storagePath   String?  // Path to file in storage (for uploads)
+  fileName      String?
+  fileType      String?  // MIME type
+
+  // Results - stored as JSON
+  result        Json?    // ExtractedDocumentData or MultiPageExtractionResult
+  error         String?  // Error message if failed
+
+  // Timing
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([fileId])
+  @@index([status, createdAt])
+}
+
+// ============================================
+// PERMISSION TEMPLATES & OVERRIDES (Procore-style)
+// ============================================
+
+// Permission templates define per-tool access levels
+// Scope: "company" for company-level tools, "project" for project-level tools
+// Users get one company template + different project templates per project
+model PermissionTemplate {
+  id                  String   @id @default(cuid())
+  name                String   @unique
+  description         String?
+  scope               String   @default("project") // "company" or "project"
+
+  // Per-tool access levels: { "daily_logs": "standard", "time_tracking": "admin", ... }
+  // Levels: "none", "read_only", "standard", "admin"
+  toolPermissions     Json     @default("{}")
+
+  // Granular permissions within tools: { "daily_logs": ["submit_entries", "edit_own_entries"], ... }
+  granularPermissions Json     @default("{}")
+
+  isSystemDefault     Boolean  @default(false) // Seeded by system
+  isProtected         Boolean  @default(false) // Cannot be edited/deleted (Owner/Admin)
+  sortOrder           Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  userCompanyPermissions UserCompanyPermission[]
+  projectAssignments     ProjectAssignment[]
+
+  @@index([scope])
+  @@index([isSystemDefault])
+}
+
+// Links user to their company-level permission template
+model UserCompanyPermission {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  companyTemplateId   String
+  assignedBy          String?  // Who assigned this template
+  assignedAt          DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyTemplate     PermissionTemplate @relation(fields: [companyTemplateId], references: [id])
+
+  @@index([companyTemplateId])
+}
+
+// User-specific permission overrides (global - not per-project)
+// Still kept for edge cases where template doesn't fit
+model UserPermissionOverride {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  overrides   Json     // { tool: { level: "admin", granular: ["action1"] }, ... }
+  grantedBy   String   // User who granted the override
+  reason      String?  // Reason for the override
+  grantedAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============================================
+// DEVICE TOKENS FOR PUSH NOTIFICATIONS
+// ============================================
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique  // APNs or FCM token
+  platform  String   // IOS, ANDROID
+  deviceId  String?  // Optional device identifier
+  appVersion String? // App version for debugging
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([platform])
+}
+
+// ============================================
+// TASKS & RFIs
+// ============================================
+
+model ProjectTask {
+  id          String    @id @default(cuid())
+  projectId   String
+  title       String
+  description String?
+  priority    String    @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  status      String    @default("TODO")   // TODO, IN_PROGRESS, BLOCKED, COMPLETED, CANCELLED
+  assigneeId  String?
+  dueDate     DateTime?
+  completedAt DateTime?
+  subtasks    Json?     // Array of subtask objects
+  tags        Json?     // Array of tag strings
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee    User?     @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  creator     User?     @relation("TaskCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([status])
+  @@index([dueDate])
+  @@index([projectId, status]) // Composite for filtered queries
+}
+
+model RFI {
+  id          String    @id @default(cuid())
+  projectId   String
+  rfiNumber   String    // e.g., "RFI-0001"
+  subject     String
+  question    String    @db.Text
+  answer      String?   @db.Text
+  status      String    @default("SUBMITTED") // DRAFT, SUBMITTED, UNDER_REVIEW, ANSWERED, CLOSED
+  priority    String    @default("MEDIUM")    // LOW, MEDIUM, HIGH, CRITICAL
+  assignedTo  String?
+  dueDate     DateTime?
+  answeredAt  DateTime?
+  answeredBy  String?
+  attachments Json?     // Array of attachment URLs
+  submittedBy String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee    User?     @relation("RFIAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+  submitter   User?     @relation("RFISubmitter", fields: [submittedBy], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, rfiNumber])
+  @@index([projectId])
+  @@index([assignedTo])
+  @@index([status])
+  @@index([dueDate])
+  @@index([projectId, status]) // Composite for filtered queries
+}
+
+// Materials Management
+model Material {
+  id                String    @id @default(cuid())
+  name              String
+  description       String?   @db.Text
+  category          String    @default("OTHER") // LUMBER, CONCRETE, STEEL, ELECTRICAL, PLUMBING, HVAC, ROOFING, DRYWALL, PAINT, FLOORING, HARDWARE, SAFETY, OTHER
+  sku               String?
+  unit              String    @default("each") // each, linear ft, sq ft, cubic yard, etc.
+  quantityOnHand    Float     @default(0)
+  minimumQuantity   Float     @default(0)
+  costPerUnit       Float     @default(0)
+  supplier          String?
+  projectId         String?
+  location          String?   // Where on site it's stored
+  status            String    @default("IN_STOCK") // IN_STOCK, LOW_STOCK, OUT_OF_STOCK, ON_ORDER, DELIVERED
+  lastOrderDate     DateTime?
+  lastDeliveryDate  DateTime?
+  notes             String?   @db.Text
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  project           Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  orders            MaterialOrder[]
+  usages            MaterialUsage[]
+
+  @@index([projectId])
+  @@index([category])
+  @@index([status])
+  @@index([sku])
+  @@index([projectId, category]) // Composite for filtered queries
+}
+
+model MaterialOrder {
+  id                    String    @id @default(cuid())
+  materialId            String
+  projectId             String?
+  quantity              Float
+  costPerUnit           Float
+  totalCost             Float
+  supplier              String
+  orderDate             DateTime  @default(now())
+  expectedDeliveryDate  DateTime?
+  actualDeliveryDate    DateTime?
+  status                String    @default("PENDING") // PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED
+  orderedById           String?
+  notes                 String?   @db.Text
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  material              Material  @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  project               Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  orderedBy             User?     @relation("MaterialOrderedBy", fields: [orderedById], references: [id], onDelete: SetNull)
+
+  @@index([materialId])
+  @@index([projectId])
+  @@index([orderedById])
+  @@index([status])
+  @@index([orderDate])
+}
+
+model MaterialUsage {
+  id            String    @id @default(cuid())
+  materialId    String
+  projectId     String
+  quantity      Float
+  usedById      String?
+  usageDate     DateTime  @default(now())
+  dailyLogId    String?
+  notes         String?   @db.Text
+  createdAt     DateTime  @default(now())
+
+  material      Material  @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  usedBy        User?     @relation("MaterialUsedBy", fields: [usedById], references: [id], onDelete: SetNull)
+  dailyLog      DailyLog? @relation(fields: [dailyLogId], references: [id], onDelete: SetNull)
+
+  @@index([materialId])
+  @@index([projectId])
+  @@index([usedById])
+  @@index([usageDate])
+  @@index([dailyLogId])
+}
+
+// ============================================
+// GENERATED REPORTS
+// ============================================
+
+model GeneratedReport {
+  id            String    @id @default(cuid())
+  name          String
+  type          String    // PROJECT_SUMMARY, LABOR, SAFETY, FINANCIAL, EQUIPMENT, DAILY_LOG
+  status        String    @default("READY") // GENERATING, READY, FAILED
+  format        String    @default("JSON") // JSON, PDF, CSV, XLSX
+  description   String?
+  projectId     String?
+  projectName   String?
+  period        String?   // THIS_MONTH, THIS_WEEK, etc.
+  startDate     DateTime?
+  endDate       DateTime?
+  fileUrl       String?   // URL to file if format is PDF/CSV/XLSX
+  chartType     String?   // BAR, PIE, LINE
+  stats         Json?     // Report statistics array
+  data          Json?     // Report data array
+  generatedById String?   // User who generated the report
+  createdAt     DateTime  @default(now())
+
+  generatedBy   User?     @relation("GeneratedReports", fields: [generatedById], references: [id], onDelete: SetNull)
+  project       Project?  @relation("ProjectReports", fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([type])
+  @@index([generatedById])
+  @@index([projectId])
+  @@index([createdAt])
+}
