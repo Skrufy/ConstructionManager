@@ -18,6 +18,7 @@ model User {
   phone         String?
   role          String    @default("FIELD_WORKER") // ADMIN, PROJECT_MANAGER, DEVELOPER, ARCHITECT, FOREMAN, CREW_LEADER, OFFICE, FIELD_WORKER, VIEWER
   status        String    @default("ACTIVE")
+  isBlaster     Boolean   @default(false) // Certified blaster who can be assigned to blasting documents
   language      String    @default("en") // User's preferred language: "en", "es"
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -98,6 +99,9 @@ model User {
 
   // Materials Management
   materialOrders      MaterialOrder[]   @relation("MaterialOrderedBy")
+
+  // Blaster Assignments
+  blasterAssignments  FileBlasterAssignment[] @relation("BlasterAssignments")
   materialUsages      MaterialUsage[]   @relation("MaterialUsedBy")
 
   // Generated Reports
@@ -435,9 +439,10 @@ model File {
   uploader      User              @relation(fields: [uploadedBy], references: [id])
   revisions     DocumentRevision[]
   annotations   DocumentAnnotation[]
-  droneExports  DroneDeployExport[] // Files imported from DroneDeploy
-  metadata      DocumentMetadata?   // OCR-extracted metadata
-  splitDrafts   DocumentSplitDraft[] @relation("SplitDraftOriginal") // If this file is an original for splitting
+  droneExports       DroneDeployExport[] // Files imported from DroneDeploy
+  metadata           DocumentMetadata?   // OCR-extracted metadata
+  splitDrafts        DocumentSplitDraft[] @relation("SplitDraftOriginal") // If this file is an original for splitting
+  blasterAssignments FileBlasterAssignment[] // Certified blasters assigned to blasting documents
 
   @@index([projectId, category])
   @@index([projectId, createdAt])
@@ -456,6 +461,20 @@ model DocumentRevision {
   createdAt     DateTime @default(now())
 
   file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+}
+
+// Blaster Assignment for Blasting Documents
+model FileBlasterAssignment {
+  id        String   @id @default(cuid())
+  fileId    String
+  blasterId String
+  createdAt DateTime @default(now())
+
+  file    File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  blaster User @relation("BlasterAssignments", fields: [blasterId], references: [id], onDelete: Cascade)
+
+  @@unique([fileId, blasterId])
+  @@index([blasterId])
 }
 
 // Document Annotations/Markups
