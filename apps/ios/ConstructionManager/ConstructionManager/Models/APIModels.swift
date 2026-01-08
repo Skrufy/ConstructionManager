@@ -308,6 +308,7 @@ struct APIDocument: Decodable {
     let project: APIDocumentProject?
     let uploader: APIDocumentUser?
     let metadata: APIDocumentMetadata?
+    let blasterAssignments: [APIBlasterAssignment]?
 
     struct APIDocumentProject: Decodable {
         let id: String
@@ -317,6 +318,11 @@ struct APIDocument: Decodable {
     struct APIDocumentUser: Decodable {
         let id: String
         let name: String
+    }
+
+    struct APIBlasterAssignment: Decodable {
+        let id: String
+        let blaster: APIDocumentUser
     }
 
     struct APIDocumentMetadata: Decodable {
@@ -345,6 +351,17 @@ struct APIDocument: Decodable {
         default: mappedCategory = .other
         }
 
+        // Convert API blaster assignments to local model
+        let localBlasterAssignments = blasterAssignments?.map { apiAssignment in
+            BlasterAssignment(
+                id: apiAssignment.id,
+                blaster: BlasterInfo(
+                    id: apiAssignment.blaster.id,
+                    name: apiAssignment.blaster.name
+                )
+            )
+        }
+
         return Document(
             id: id,
             projectId: projectId,
@@ -359,7 +376,8 @@ struct APIDocument: Decodable {
             uploadedBy: uploader?.id ?? "",
             uploadedAt: createdAt,
             expiresAt: nil,
-            tags: tags ?? []
+            tags: tags ?? [],
+            blasterAssignments: localBlasterAssignments
         )
     }
 }
