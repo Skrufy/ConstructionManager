@@ -159,7 +159,8 @@ extension Document {
             uploadedBy: "1",
             uploadedAt: Date(),
             expiresAt: Calendar.current.date(byAdding: .month, value: 6, to: Date()),
-            tags: ["license", "contractor"]
+            tags: ["license", "contractor"],
+            blasterAssignments: nil
         ),
         Document(
             id: "2",
@@ -175,7 +176,8 @@ extension Document {
             uploadedBy: "1",
             uploadedAt: Date(),
             expiresAt: Calendar.current.date(byAdding: .day, value: 15, to: Date()),
-            tags: ["osha", "safety", "training"]
+            tags: ["osha", "safety", "training"],
+            blasterAssignments: nil
         ),
         Document(
             id: "3",
@@ -191,7 +193,8 @@ extension Document {
             uploadedBy: "1",
             uploadedAt: Date(),
             expiresAt: Calendar.current.date(byAdding: .month, value: 2, to: Date()),
-            tags: ["insurance", "liability"]
+            tags: ["insurance", "liability"],
+            blasterAssignments: nil
         ),
         Document(
             id: "4",
@@ -207,7 +210,8 @@ extension Document {
             uploadedBy: "1",
             uploadedAt: Date(),
             expiresAt: nil,
-            tags: ["permit", "city"]
+            tags: ["permit", "city"],
+            blasterAssignments: nil
         ),
         Document(
             id: "5",
@@ -223,7 +227,8 @@ extension Document {
             uploadedBy: "1",
             uploadedAt: Date(),
             expiresAt: nil,
-            tags: ["contract", "electrical"]
+            tags: ["contract", "electrical"],
+            blasterAssignments: nil
         )
     ]
 }
