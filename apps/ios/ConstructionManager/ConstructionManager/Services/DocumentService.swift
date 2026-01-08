@@ -409,6 +409,17 @@ struct DocumentAPIModel: Decodable {
         default: mappedCategory = .other
         }
 
+        // Convert blasters array to BlasterAssignment format
+        let localBlasterAssignments = blasters?.map { blaster in
+            BlasterAssignment(
+                id: blaster.id, // Using blaster ID as assignment ID
+                blaster: BlasterInfo(
+                    id: blaster.id,
+                    name: blaster.name
+                )
+            )
+        }
+
         return Document(
             id: id,
             projectId: projectId,
@@ -423,7 +434,8 @@ struct DocumentAPIModel: Decodable {
             uploadedBy: uploadedByUser?.name ?? "Unknown",
             uploadedAt: createdAt,
             expiresAt: nil,
-            tags: tags ?? []
+            tags: tags ?? [],
+            blasterAssignments: localBlasterAssignments
         )
     }
 }
