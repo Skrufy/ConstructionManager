@@ -435,7 +435,10 @@ struct DocumentAPIModel: Decodable {
             uploadedAt: createdAt,
             expiresAt: nil,
             tags: tags ?? [],
-            blasterAssignments: localBlasterAssignments
+            blasterAssignments: localBlasterAssignments,
+            storagePath: storagePath,
+            createdAt: createdAt,
+            updatedAt: createdAt  // Use createdAt since API doesn't have separate updatedAt
         )
     }
 }
