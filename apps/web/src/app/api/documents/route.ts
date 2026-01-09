@@ -107,11 +107,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Log the where clause for debugging
+    console.log('Documents query where clause:', JSON.stringify(where, null, 2))
+
     const [documents, total] = await Promise.all([
       prisma.file.findMany({
         where,
         include: {
           project: { select: { id: true, name: true, address: true } },
+          // Make uploader optional - some files may have deleted users
           uploader: { select: { id: true, name: true } },
           blasterAssignments: {
             include: {
@@ -150,6 +154,8 @@ export async function GET(request: NextRequest) {
       prisma.file.count({ where })
     ])
 
+    console.log(`Found ${documents.length} documents, total: ${total}`)
+
     // Transform documents to snake_case format for mobile
     const transformedDocuments = documents.map(doc => {
       // Safely map blaster assignments (handle null blasters)
@@ -180,10 +186,10 @@ export async function GET(request: NextRequest) {
         current_version: doc.currentVersion,
         is_latest: doc.isLatest,
         is_admin_only: doc.isAdminOnly,
-        project: doc.project,
-        uploader: doc.uploader,
+        project: doc.project ?? null,
+        uploader: doc.uploader ?? null,
         blaster_assignments: blasterAssignments,
-        metadata: doc.metadata,
+        metadata: doc.metadata ?? null,
         revision_count: doc._count?.revisions ?? 0,
         annotation_count: doc._count?.annotations ?? 0
       }
@@ -211,7 +217,14 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error fetching documents:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    // Return detailed error in development
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorStack = error instanceof Error ? error.stack : undefined
+    console.error('Error details:', { message: errorMessage, stack: errorStack })
+    return NextResponse.json({
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+    }, { status: 500 })
   }
 }
 
