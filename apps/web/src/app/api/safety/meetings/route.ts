@@ -118,32 +118,45 @@ export async function GET(request: NextRequest) {
     // Accept both camelCase and snake_case
     const projectId = searchParams.get('projectId') || searchParams.get('project_id')
 
+    // Pagination parameters
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
+    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '25', 10)))
+    const skip = (page - 1) * pageSize
+
     const where: Record<string, unknown> = {}
     if (projectId) where.projectId = projectId
 
-    const meetings = await prisma.safetyMeeting.findMany({
-      where,
-      include: {
-        project: { select: { id: true, name: true } },
-        conductor: { select: { id: true, name: true } },
-        safetyTopic: { select: { id: true, name: true, category: true } },
-        meetingAttendees: {
-          include: {
-            employee: {
-              select: { id: true, name: true, company: true, jobTitle: true }
+    const [meetings, total] = await Promise.all([
+      prisma.safetyMeeting.findMany({
+        where,
+        include: {
+          project: { select: { id: true, name: true } },
+          conductor: { select: { id: true, name: true } },
+          safetyTopic: { select: { id: true, name: true, category: true } },
+          meetingAttendees: {
+            include: {
+              employee: {
+                select: { id: true, name: true, company: true, jobTitle: true }
+              }
             }
           }
-        }
-      },
-      orderBy: { date: 'desc' }
-    })
+        },
+        orderBy: { date: 'desc' },
+        skip,
+        take: pageSize,
+      }),
+      prisma.safetyMeeting.count({ where })
+    ])
 
     // Transform to camelCase format for Android
     const transformedMeetings = meetings.map(transformMeeting)
 
     return NextResponse.json({
       meetings: transformedMeetings,
-      total: transformedMeetings.length
+      total,
+      page,
+      page_size: pageSize,
+      total_pages: Math.ceil(total / pageSize),
     })
   } catch (error) {
     console.error('Error fetching meetings:', error)

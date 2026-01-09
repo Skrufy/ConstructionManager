@@ -73,7 +73,7 @@ private class AuthInterceptor(private val tokenStore: AuthTokenStore) : Intercep
         .addHeader("Content-Type", "application/json")
         .build()
     } else {
-      Log.w("AuthInterceptor", "No auth token available for request: ${chain.request().url}")
+      Log.w("AuthInterceptor", "No auth token available for request")
       chain.request().newBuilder()
         .addHeader("Accept", "application/json")
         .build()

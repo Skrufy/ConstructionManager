@@ -12,6 +12,7 @@ import {
   MapPin,
   Clock,
 } from 'lucide-react'
+import { getFlightStatusColor } from '@/lib/status-colors'
 
 interface Flight {
   id: string
@@ -79,17 +80,6 @@ export function FlightComparison({ flights, onClose }: FlightComparisonProps) {
       day: 'numeric',
       year: 'numeric',
     })
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'PROCESSED':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-      case 'PENDING_UPLOAD':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-    }
   }
 
   const FlightSelector = ({
@@ -366,7 +356,7 @@ export function FlightComparison({ flights, onClose }: FlightComparisonProps) {
             {/* Left Flight Details */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(leftFlight.status)}`}>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getFlightStatusColor(leftFlight.status)}`}>
                   Before
                 </span>
                 <span className="font-medium text-gray-900 dark:text-gray-100">
@@ -392,7 +382,7 @@ export function FlightComparison({ flights, onClose }: FlightComparisonProps) {
             {/* Right Flight Details */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(rightFlight.status)}`}>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getFlightStatusColor(rightFlight.status)}`}>
                   After
                 </span>
                 <span className="font-medium text-gray-900 dark:text-gray-100">

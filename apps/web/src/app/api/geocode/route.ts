@@ -114,79 +114,99 @@ export async function GET(request: NextRequest) {
 
     // If we have a place_id, get details from Google
     if (placeId && googleApiKey) {
-      const detailsUrl = `https://maps.googleapis.com/maps/api/geocode/json?place_id=${encodeURIComponent(placeId)}&key=${googleApiKey}`
-      const response = await fetch(detailsUrl)
-      const data = await response.json()
+      try {
+        const detailsUrl = `https://maps.googleapis.com/maps/api/geocode/json?place_id=${encodeURIComponent(placeId)}&key=${googleApiKey}`
+        const response = await fetch(detailsUrl)
+        const data = await response.json()
 
-      if (data.status === 'OK' && data.results?.length > 0) {
-        const parsed = parseGoogleResult(data.results[0])
-        setCachedResult(cacheKey, [parsed])
-        return NextResponse.json({ results: [parsed], source: 'google' })
+        if (data.status === 'OK' && data.results?.length > 0) {
+          const parsed = parseGoogleResult(data.results[0])
+          setCachedResult(cacheKey, [parsed])
+          return NextResponse.json({ results: [parsed], source: 'google' })
+        }
+      } catch (error) {
+        console.error('Failed to parse Google geocode details response:', error)
+        // Fall through to other methods
       }
     }
 
     // Use Google Places Autocomplete if API key is available
     if (googleApiKey && query) {
-      const autocompleteUrl = new URL('https://maps.googleapis.com/maps/api/place/autocomplete/json')
-      autocompleteUrl.searchParams.set('input', query)
-      autocompleteUrl.searchParams.set('key', googleApiKey)
-      autocompleteUrl.searchParams.set('types', 'address')
-      autocompleteUrl.searchParams.set('components', 'country:us')
-      // Bias towards Tennessee (Nashville coordinates)
-      autocompleteUrl.searchParams.set('location', '36.1627,-86.7816')
-      autocompleteUrl.searchParams.set('radius', '500000') // 500km radius bias
+      try {
+        const autocompleteUrl = new URL('https://maps.googleapis.com/maps/api/place/autocomplete/json')
+        autocompleteUrl.searchParams.set('input', query)
+        autocompleteUrl.searchParams.set('key', googleApiKey)
+        autocompleteUrl.searchParams.set('types', 'address')
+        autocompleteUrl.searchParams.set('components', 'country:us')
+        // Bias towards Tennessee (Nashville coordinates)
+        autocompleteUrl.searchParams.set('location', '36.1627,-86.7816')
+        autocompleteUrl.searchParams.set('radius', '500000') // 500km radius bias
 
-      const response = await fetch(autocompleteUrl.toString())
-      const data = await response.json()
+        const response = await fetch(autocompleteUrl.toString())
+        const data = await response.json()
 
-      if (data.status === 'OK' && data.predictions?.length > 0) {
-        // Get full details for each prediction (up to 5)
-        const predictions = data.predictions.slice(0, 5) as GooglePlaceResult[]
+        if (data.status === 'OK' && data.predictions?.length > 0) {
+          // Get full details for each prediction (up to 5)
+          const predictions = data.predictions.slice(0, 5) as GooglePlaceResult[]
 
-        const detailedResults = await Promise.all(
-          predictions.map(async (pred) => {
-            const detailUrl = `https://maps.googleapis.com/maps/api/geocode/json?place_id=${pred.place_id}&key=${googleApiKey}`
-            const detailRes = await fetch(detailUrl)
-            const detailData = await detailRes.json()
+          const detailedResults = await Promise.all(
+            predictions.map(async (pred) => {
+              try {
+                const detailUrl = `https://maps.googleapis.com/maps/api/geocode/json?place_id=${pred.place_id}&key=${googleApiKey}`
+                const detailRes = await fetch(detailUrl)
+                const detailData = await detailRes.json()
 
-            if (detailData.status === 'OK' && detailData.results?.[0]) {
-              return parseGoogleResult(detailData.results[0])
-            }
-            return null
-          })
-        )
+                if (detailData.status === 'OK' && detailData.results?.[0]) {
+                  return parseGoogleResult(detailData.results[0])
+                }
+              } catch {
+                // Skip this prediction if parsing fails
+              }
+              return null
+            })
+          )
 
-        const validResults = detailedResults.filter(Boolean)
-        setCachedResult(cacheKey, validResults)
-        return NextResponse.json({ results: validResults, source: 'google' })
-      }
+          const validResults = detailedResults.filter(Boolean)
+          if (validResults.length > 0) {
+            setCachedResult(cacheKey, validResults)
+            return NextResponse.json({ results: validResults, source: 'google' })
+          }
+        }
 
-      // If Google fails, fall through to Nominatim
-      if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-        console.error('Google Places API error:', data.status, data.error_message)
+        // If Google fails, fall through to Nominatim
+        if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+          console.error('Google Places API error:', data.status, data.error_message)
+        }
+      } catch (error) {
+        console.error('Failed to parse Google Places API response:', error)
+        // Fall through to Nominatim
       }
     }
 
     // Fallback to Nominatim (free, no API key required)
     if (query) {
-      const nominatimUrl = new URL('https://nominatim.openstreetmap.org/search')
-      nominatimUrl.searchParams.set('q', query)
-      nominatimUrl.searchParams.set('format', 'json')
-      nominatimUrl.searchParams.set('addressdetails', '1')
-      nominatimUrl.searchParams.set('limit', '5')
-      nominatimUrl.searchParams.set('countrycodes', 'us')
+      try {
+        const nominatimUrl = new URL('https://nominatim.openstreetmap.org/search')
+        nominatimUrl.searchParams.set('q', query)
+        nominatimUrl.searchParams.set('format', 'json')
+        nominatimUrl.searchParams.set('addressdetails', '1')
+        nominatimUrl.searchParams.set('limit', '5')
+        nominatimUrl.searchParams.set('countrycodes', 'us')
 
-      const response = await fetch(nominatimUrl.toString(), {
-        headers: {
-          'User-Agent': 'ConstructionManagementPlatform/1.0',
-          'Accept-Language': 'en-US,en',
-        },
-      })
+        const response = await fetch(nominatimUrl.toString(), {
+          headers: {
+            'User-Agent': 'ConstructionManagementPlatform/1.0',
+            'Accept-Language': 'en-US,en',
+          },
+        })
 
-      if (response.ok) {
-        const data = await response.json()
-        setCachedResult(cacheKey, data)
-        return NextResponse.json({ results: data, source: 'nominatim' })
+        if (response.ok) {
+          const data = await response.json()
+          setCachedResult(cacheKey, data)
+          return NextResponse.json({ results: data, source: 'nominatim' })
+        }
+      } catch (error) {
+        console.error('Failed to parse Nominatim API response:', error)
       }
     }
 

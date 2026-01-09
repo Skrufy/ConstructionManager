@@ -18,6 +18,7 @@ import {
   Filter,
   Building2,
 } from 'lucide-react'
+import { getRfiStatusColor } from '@/lib/status-colors'
 
 interface RFI {
   id: string
@@ -147,23 +148,6 @@ export default function RFIsPage() {
       console.error('Error creating RFI:', error)
     } finally {
       setCreating(false)
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'DRAFT':
-        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-400'
-      case 'SUBMITTED':
-        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
-      case 'UNDER_REVIEW':
-        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
-      case 'ANSWERED':
-        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
-      case 'CLOSED':
-        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-400'
-      default:
-        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-400'
     }
   }
 
@@ -484,7 +468,7 @@ export default function RFIsPage() {
                       <span className="font-mono text-sm text-gray-500 dark:text-gray-400">
                         {rfi.rfi_number}
                       </span>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(rfi.status)}`}>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${getRfiStatusColor(rfi.status)}`}>
                         {rfi.status.replace('_', ' ')}
                       </span>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${getPriorityColor(rfi.priority)}`}>

@@ -65,6 +65,13 @@ object AppTypography {
         lineHeight = 24.sp
     )
 
+    val bodyBold = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 16.sp,
+        lineHeight = 24.sp
+    )
+
     // MARK: - Secondary Text
     val secondary = TextStyle(
         fontFamily = FontFamily.SansSerif,

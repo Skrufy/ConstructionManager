@@ -15,6 +15,7 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react'
+import { getEquipmentStatusColor } from '@/lib/status-colors'
 
 interface Equipment {
   id: string
@@ -174,16 +175,6 @@ export function EquipmentDetailClient({ equipmentId }: EquipmentDetailClientProp
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'AVAILABLE': return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
-      case 'IN_USE': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
-      case 'MAINTENANCE': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
-      case 'OUT_OF_SERVICE': return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
-      default: return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-    }
-  }
-
   const getTypeLabel = (type: string) => SERVICE_TYPES.find(t => t.value === type)?.label || type.replace(/_/g, ' ')
 
   const getTypeColor = (type: string) => {
@@ -238,7 +229,7 @@ export function EquipmentDetailClient({ equipmentId }: EquipmentDetailClientProp
             </div>
           </div>
         </div>
-        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(equipment.status)}`}>
+        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getEquipmentStatusColor(equipment.status)}`}>
           {equipment.status.replace('_', ' ')}
         </span>
       </div>

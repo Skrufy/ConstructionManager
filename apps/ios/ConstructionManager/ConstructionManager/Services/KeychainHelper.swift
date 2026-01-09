@@ -47,9 +47,11 @@ class KeychainHelper {
 
         let status = SecItemAdd(query as CFDictionary, nil)
 
+        #if DEBUG
         if status != errSecSuccess {
-            print("[KeychainHelper] Failed to save \(key.rawValue): \(status)")
+            print("[KeychainHelper] Failed to save token: OSStatus \(status)")
         }
+        #endif
 
         return status == errSecSuccess
     }
@@ -113,7 +115,9 @@ class KeychainHelper {
         if let accessToken = UserDefaults.standard.string(forKey: "accessToken") {
             if save(token: accessToken, forKey: .accessToken) {
                 UserDefaults.standard.removeObject(forKey: "accessToken")
+                #if DEBUG
                 print("[KeychainHelper] Migrated access token to Keychain")
+                #endif
             }
         }
 
@@ -121,7 +125,9 @@ class KeychainHelper {
         if let refreshToken = UserDefaults.standard.string(forKey: "refreshToken") {
             if save(token: refreshToken, forKey: .refreshToken) {
                 UserDefaults.standard.removeObject(forKey: "refreshToken")
+                #if DEBUG
                 print("[KeychainHelper] Migrated refresh token to Keychain")
+                #endif
             }
         }
     }

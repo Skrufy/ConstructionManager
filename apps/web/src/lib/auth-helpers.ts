@@ -79,8 +79,6 @@ export async function getUserFromToken(token: string): Promise<AuthUser | null> 
       return null
     }
 
-    console.log('[getUserFromToken] Supabase user found:', supabaseUser.id, supabaseUser.email)
-
     // Get Prisma user data
     const prismaUser = await prisma.user.findUnique({
       where: { supabaseId: supabaseUser.id },
@@ -94,8 +92,7 @@ export async function getUserFromToken(token: string): Promise<AuthUser | null> 
     })
 
     if (!prismaUser) {
-      console.warn('[getUserFromToken] No Prisma user found for Supabase ID:', supabaseUser.id)
-      console.warn('[getUserFromToken] Creating PENDING_SETUP user for:', supabaseUser.email)
+      console.warn('[getUserFromToken] No Prisma user found, creating PENDING_SETUP user')
 
       // Create user with PENDING_SETUP status - they can't login until admin activates them
       // This ensures we track these users and admins can see them in user management
@@ -117,11 +114,9 @@ export async function getUserFromToken(token: string): Promise<AuthUser | null> 
     }
 
     if (prismaUser.status !== 'ACTIVE') {
-      console.error('[getUserFromToken] User is not ACTIVE:', prismaUser.status)
+      console.error('[getUserFromToken] User account is not active')
       return null
     }
-
-    console.log('[getUserFromToken] User authenticated successfully:', prismaUser.email)
 
     return {
       id: prismaUser.id,

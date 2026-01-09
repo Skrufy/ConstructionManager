@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -40,6 +41,8 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.io.FileOutputStream
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 private data class DocumentsState(
     val loading: Boolean = false,
@@ -185,7 +188,10 @@ fun DocumentsScreen(
                 val response = withContext(Dispatchers.IO) {
                     apiService.getProjects()
                 }
-                projects = response.projects
+                // Map ProjectSummary to DocumentProject for compatibility
+                projects = response.projects.map { proj ->
+                    DocumentProject(id = proj.id, name = proj.name, address = proj.address)
+                }
             } catch (e: Exception) {
                 // Ignore error, projects list will be empty
             }
@@ -432,7 +438,7 @@ fun DocumentsScreen(
                                             }
                                             state = state.copy(selectedBlasterIds = newSelected)
                                         },
-                                        label = { Text(blaster.name) },
+                                        label = { Text(blaster.name ?: "") },
                                         colors = FilterChipDefaults.filterChipColors(
                                             selectedContainerColor = ConstructionOrange,
                                             selectedLabelColor = androidx.compose.ui.graphics.Color.White,
@@ -672,7 +678,7 @@ fun DocumentsScreen(
                                                 onClick = { uploadProjectId = project.id }
                                             )
                                             Spacer(modifier = Modifier.width(AppSpacing.sm))
-                                            Text(project.name, style = AppTypography.body)
+                                            Text(project.name ?: "", style = AppTypography.body)
                                         }
                                     }
                                 }
@@ -825,11 +831,11 @@ fun DocumentsScreen(
                                                 Spacer(modifier = Modifier.width(AppSpacing.sm))
                                                 Column {
                                                     Text(
-                                                        blaster.name,
+                                                        blaster.name ?: "",
                                                         style = AppTypography.body
                                                     )
                                                     Text(
-                                                        blaster.email,
+                                                        blaster.email ?: "",
                                                         style = AppTypography.caption,
                                                         color = AppColors.textSecondary
                                                     )
@@ -917,7 +923,7 @@ private suspend fun uploadFile(
         val typePart = "document".toRequestBody("text/plain".toMediaTypeOrNull())
         val categoryPart = category.toRequestBody("text/plain".toMediaTypeOrNull())
         val blasterIdsPart = if (blasterIds.isNotEmpty()) {
-            com.google.gson.Gson().toJson(blasterIds).toRequestBody("application/json".toMediaTypeOrNull())
+            Json.encodeToString(blasterIds).toRequestBody("application/json".toMediaTypeOrNull())
         } else null
 
         // Upload to server

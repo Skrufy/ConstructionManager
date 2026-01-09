@@ -1,17 +1,17 @@
 package com.constructionpro.app.data
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.util.Base64
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.longPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -19,13 +19,13 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import java.util.concurrent.atomic.AtomicReference
 
-private val Context.dataStore by preferencesDataStore(name = "auth")
+private const val PREFS_NAME = "auth_encrypted"
 
 class AuthTokenStore(private val context: Context) {
   private object Keys {
-    val accessToken = stringPreferencesKey("access_token")
-    val refreshToken = stringPreferencesKey("refresh_token")
-    val expiresAt = longPreferencesKey("expires_at")
+    const val ACCESS_TOKEN = "access_token"
+    const val REFRESH_TOKEN = "refresh_token"
+    const val EXPIRES_AT = "expires_at"
   }
 
   // In-memory cache for synchronous access from OkHttp interceptors
@@ -36,16 +36,55 @@ class AuthTokenStore(private val context: Context) {
   // Scope for observing token changes
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-  // Define flows BEFORE init block to avoid null reference
-  val tokenFlow: Flow<String?> = context.dataStore.data.map { prefs ->
-    prefs[Keys.accessToken]
+  // Encrypted SharedPreferences instance
+  private val encryptedPrefs: SharedPreferences by lazy {
+    val masterKey = MasterKey.Builder(context)
+      .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+      .build()
+
+    EncryptedSharedPreferences.create(
+      context,
+      PREFS_NAME,
+      masterKey,
+      EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+      EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
   }
 
-  val refreshTokenFlow: Flow<String?> = context.dataStore.data.map { prefs ->
-    prefs[Keys.refreshToken]
+  // Flow that emits when token changes
+  val tokenFlow: Flow<String?> = callbackFlow {
+    val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+      if (key == Keys.ACCESS_TOKEN) {
+        trySend(encryptedPrefs.getString(Keys.ACCESS_TOKEN, null))
+      }
+    }
+    encryptedPrefs.registerOnSharedPreferenceChangeListener(listener)
+    // Emit current value
+    send(encryptedPrefs.getString(Keys.ACCESS_TOKEN, null))
+    awaitClose {
+      encryptedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+    }
+  }
+
+  val refreshTokenFlow: Flow<String?> = callbackFlow {
+    val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+      if (key == Keys.REFRESH_TOKEN) {
+        trySend(encryptedPrefs.getString(Keys.REFRESH_TOKEN, null))
+      }
+    }
+    encryptedPrefs.registerOnSharedPreferenceChangeListener(listener)
+    // Emit current value
+    send(encryptedPrefs.getString(Keys.REFRESH_TOKEN, null))
+    awaitClose {
+      encryptedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+    }
   }
 
   init {
+    // Initialize cache from encrypted storage
+    cachedAccessToken.set(encryptedPrefs.getString(Keys.ACCESS_TOKEN, null))
+    cachedRefreshToken.set(encryptedPrefs.getString(Keys.REFRESH_TOKEN, null))
+
     // Observe token changes and update cache
     scope.launch {
       tokenFlow.collect { token ->
@@ -81,14 +120,21 @@ class AuthTokenStore(private val context: Context) {
       parseExpirationFromJwt(accessToken)
     }
 
-    context.dataStore.edit { prefs ->
-      prefs[Keys.accessToken] = accessToken
+    encryptedPrefs.edit().apply {
+      putString(Keys.ACCESS_TOKEN, accessToken)
       if (refreshToken != null) {
-        prefs[Keys.refreshToken] = refreshToken
+        putString(Keys.REFRESH_TOKEN, refreshToken)
       }
       if (expiresAt != null) {
-        prefs[Keys.expiresAt] = expiresAt
+        putLong(Keys.EXPIRES_AT, expiresAt)
       }
+      apply()
+    }
+
+    // Update cache immediately
+    cachedAccessToken.set(accessToken)
+    if (refreshToken != null) {
+      cachedRefreshToken.set(refreshToken)
     }
   }
 
@@ -100,11 +146,16 @@ class AuthTokenStore(private val context: Context) {
   }
 
   suspend fun clearToken() {
-    context.dataStore.edit { prefs ->
-      prefs.remove(Keys.accessToken)
-      prefs.remove(Keys.refreshToken)
-      prefs.remove(Keys.expiresAt)
+    encryptedPrefs.edit().apply {
+      remove(Keys.ACCESS_TOKEN)
+      remove(Keys.REFRESH_TOKEN)
+      remove(Keys.EXPIRES_AT)
+      apply()
     }
+
+    // Clear cache immediately
+    cachedAccessToken.set(null)
+    cachedRefreshToken.set(null)
   }
 
   suspend fun getToken(): String? {
@@ -116,9 +167,8 @@ class AuthTokenStore(private val context: Context) {
   }
 
   suspend fun getExpiresAt(): Long? {
-    return context.dataStore.data.map { prefs ->
-      prefs[Keys.expiresAt]
-    }.firstOrNull()
+    val expiresAt = encryptedPrefs.getLong(Keys.EXPIRES_AT, -1L)
+    return if (expiresAt == -1L) null else expiresAt
   }
 
   /**

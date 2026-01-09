@@ -59,8 +59,8 @@ data class BlasterAssignment(
 @Serializable
 data class DocumentMetadata(
   val discipline: String? = null,
-  val drawingNumber: String? = null,
-  val sheetTitle: String? = null,
+  @SerialName("drawing_number") val drawingNumber: String? = null,
+  @SerialName("sheet_title") val sheetTitle: String? = null,
   val revision: String? = null,
   val scale: String? = null,
   val building: String? = null,
@@ -72,12 +72,12 @@ data class DocumentMetadata(
 data class DocumentRevision(
   val id: String? = null,
   val version: Int? = null,
-  val storagePath: String? = null,
-  val changeNotes: String? = null,
-  val uploadedBy: String? = null,
-  val fileSize: Int? = null,
+  @SerialName("storage_path") val storagePath: String? = null,
+  @SerialName("change_notes") val changeNotes: String? = null,
+  @SerialName("uploaded_by") val uploadedBy: String? = null,
+  @SerialName("file_size") val fileSize: Int? = null,
   val checksum: String? = null,
-  val createdAt: String? = null
+  @SerialName("created_at") val createdAt: String? = null
 )
 
 @Serializable
@@ -98,8 +98,8 @@ data class DocumentDetail(
   val type: String? = null,
   val category: String? = null,
   val description: String? = null,
-  val storagePath: String? = null,
-  val createdAt: String? = null,
+  @SerialName("storage_path") val storagePath: String? = null,
+  @SerialName("created_at") val createdAt: String? = null,
   val project: DocumentProject? = null,
   val uploader: DocumentUser? = null,
   val metadata: DocumentMetadata? = null,
@@ -111,11 +111,11 @@ data class DocumentDetail(
 @Serializable
 data class DocumentAnnotation(
   val id: String? = null,
-  val annotationType: String? = null,
+  @SerialName("annotation_type") val annotationType: String? = null,
   val content: JsonElement? = null,
-  val pageNumber: Int? = null,
-  val createdBy: String? = null,
-  val resolvedAt: String? = null,
-  val resolvedBy: String? = null,
-  val createdAt: String? = null
+  @SerialName("page_number") val pageNumber: Int? = null,
+  @SerialName("created_by") val createdBy: String? = null,
+  @SerialName("resolved_at") val resolvedAt: String? = null,
+  @SerialName("resolved_by") val resolvedBy: String? = null,
+  @SerialName("created_at") val createdAt: String? = null
 )

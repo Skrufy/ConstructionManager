@@ -14,6 +14,7 @@ import {
   XCircle,
   Loader2,
 } from 'lucide-react'
+import { getEquipmentStatusColor } from '@/lib/status-colors'
 
 interface Equipment {
   id: string
@@ -86,21 +87,6 @@ export default function EquipmentPage() {
         return <XCircle className="h-5 w-5 text-red-500" />
       default:
         return <AlertTriangle className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'AVAILABLE':
-        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
-      case 'IN_USE':
-        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
-      case 'MAINTENANCE':
-        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
-      case 'OUT_OF_SERVICE':
-        return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
-      default:
-        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
     }
   }
 
@@ -236,7 +222,7 @@ export default function EquipmentPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Status</span>
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(item.status)}`}>
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${getEquipmentStatusColor(item.status)}`}>
                     {item.status.replace('_', ' ')}
                   </span>
                 </div>

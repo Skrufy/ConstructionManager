@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { Plus, Calendar, User, Building2, Shield, ChevronDown } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { getDailyLogStatusColor } from '@/lib/status-colors'
 
 interface Project {
   id: string
@@ -102,19 +103,6 @@ export function DailyLogsClient({
       fetchLogs()
     }
   }, [selectedProject, initialProjectFilter])
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'APPROVED':
-        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
-      case 'SUBMITTED':
-        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
-      case 'DRAFT':
-        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-      default:
-        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-    }
-  }
 
   return (
     <div className="space-y-6">
@@ -218,7 +206,7 @@ export function DailyLogsClient({
                     </span>
                   </div>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(log.status)}`}>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDailyLogStatusColor(log.status)}`}>
                   {log.status}
                 </span>
               </div>

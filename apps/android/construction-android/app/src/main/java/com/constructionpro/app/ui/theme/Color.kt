@@ -19,6 +19,7 @@ val ConstructionOrange = Color(0xFFF97316)
 val ConstructionYellow = Color(0xFFEAB308)
 val ConstructionGreen = Color(0xFF10B981)
 val ConstructionRed = Color(0xFFEF4444)
+val Purple = Color(0xFF8B5CF6)
 
 // Neutral Gray Palette
 val Gray50 = Color(0xFFF9FAFB)

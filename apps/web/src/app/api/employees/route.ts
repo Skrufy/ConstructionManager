@@ -53,6 +53,11 @@ export async function GET(request: NextRequest) {
     const isActive = searchParams.get('active')
     const company = searchParams.get('company')
 
+    // Pagination parameters
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
+    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '25', 10)))
+    const skip = (page - 1) * pageSize
+
     const where: Record<string, unknown> = {}
 
     // Default to active employees only
@@ -73,31 +78,42 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    const employees = await prisma.employee.findMany({
-      where,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        company: true,
-        jobTitle: true,
-        userId: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+    const [employees, total] = await Promise.all([
+      prisma.employee.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          company: true,
+          jobTitle: true,
+          userId: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            }
           }
-        }
-      },
-      orderBy: { name: 'asc' }
-    })
+        },
+        orderBy: { name: 'asc' },
+        skip,
+        take: pageSize,
+      }),
+      prisma.employee.count({ where })
+    ])
 
-    return NextResponse.json(employees.map(transformEmployee))
+    return NextResponse.json({
+      employees: employees.map(transformEmployee),
+      total,
+      page,
+      page_size: pageSize,
+      total_pages: Math.ceil(total / pageSize),
+    })
   } catch (error) {
     console.error('Error fetching employees:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -16,6 +16,7 @@ import {
   UserCheck,
 } from 'lucide-react'
 import { formatDate, formatDateTime } from '@/lib/utils'
+import { getDailyLogStatusColor } from '@/lib/status-colors'
 import { DailyLogActions } from './daily-log-actions'
 
 interface DailyLogPageProps {
@@ -66,19 +67,6 @@ export default async function DailyLogPage({ params }: DailyLogPageProps) {
     notFound()
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'APPROVED':
-        return 'bg-green-100 text-green-800'
-      case 'SUBMITTED':
-        return 'bg-blue-100 text-blue-800'
-      case 'DRAFT':
-        return 'bg-gray-100 text-gray-800 dark:text-gray-200'
-      default:
-        return 'bg-gray-100 text-gray-800 dark:text-gray-200'
-    }
-  }
-
   const weatherData = dailyLog.weatherData as { temp?: number; conditions?: string } | null
 
   return (
@@ -94,7 +82,7 @@ export default async function DailyLogPage({ params }: DailyLogPageProps) {
               <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 Daily Log - {formatDate(dailyLog.date)}
               </h1>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(dailyLog.status)}`}>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDailyLogStatusColor(dailyLog.status)}`}>
                 {dailyLog.status}
               </span>
             </div>

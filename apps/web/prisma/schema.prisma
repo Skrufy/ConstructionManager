@@ -106,6 +106,9 @@ model User {
 
   // Generated Reports
   generatedReports    GeneratedReport[] @relation("GeneratedReports")
+
+  @@index([role])
+  @@index([status])
 }
 
 // User Invitations
@@ -446,6 +449,9 @@ model File {
 
   @@index([projectId, category])
   @@index([projectId, createdAt])
+  @@index([uploadedBy])
+  @@index([isLatest])
+  @@index([category, isLatest])
 }
 
 // Document Revision History

@@ -22,6 +22,7 @@ import {
   X,
   Save,
 } from 'lucide-react'
+import { getRfiStatusColor } from '@/lib/status-colors'
 
 interface RFI {
   id: string
@@ -274,11 +275,6 @@ export default function RFIDetailPage({ params }: PageProps) {
     setEditedDueDate(rfi.due_date ? new Date(rfi.due_date).toISOString().split('T')[0] : '')
   }
 
-  const getStatusColor = (status: string) => {
-    const option = STATUS_OPTIONS.find(s => s.value === status)
-    return option?.color || 'bg-gray-100 text-gray-800'
-  }
-
   const getPriorityColor = (priority: string) => {
     const option = PRIORITY_OPTIONS.find(p => p.value === priority)
     return option?.color || 'bg-gray-100 text-gray-800'
@@ -370,7 +366,7 @@ export default function RFIDetailPage({ params }: PageProps) {
               <span className="font-mono text-sm text-gray-500 dark:text-gray-400">
                 {rfi.rfi_number}
               </span>
-              <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(rfi.status)}`}>
+              <span className={`px-2 py-1 rounded text-xs font-medium ${getRfiStatusColor(rfi.status)}`}>
                 {rfi.status.replace('_', ' ')}
               </span>
               <span className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 ${getPriorityColor(rfi.priority)}`}>

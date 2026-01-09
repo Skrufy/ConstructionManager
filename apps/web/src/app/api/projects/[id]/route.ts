@@ -5,6 +5,74 @@ import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
+// Helper to transform project to snake_case format for iOS/Android
+function transformProject(project: {
+  id: string
+  name: string
+  address: string | null
+  description: string | null
+  gpsLatitude: number | null
+  gpsLongitude: number | null
+  startDate: Date | null
+  endDate: Date | null
+  status: string
+  visibilityMode: string
+  clientId: string | null
+  createdAt: Date
+  updatedAt: Date
+  client?: { id: string; companyName: string; contactName: string | null } | null
+  assignments?: Array<{ user: { id: string; name: string; email: string; role: string } }>
+  _count?: { assignments?: number; dailyLogs?: number; timeEntries?: number; files?: number }
+}, drawingCount: number = 0) {
+  // Calculate document count (files minus drawings)
+  const totalFiles = project._count?.files ?? 0
+  const documentCount = Math.max(0, totalFiles - drawingCount)
+
+  return {
+    id: project.id,
+    name: project.name,
+    address: project.address ?? '',
+    city: '',
+    state: '',
+    zip_code: '',
+    description: project.description,
+    gps_latitude: project.gpsLatitude,
+    gps_longitude: project.gpsLongitude,
+    start_date: project.startDate?.toISOString() ?? null,
+    end_date: project.endDate?.toISOString() ?? null,
+    estimated_end_date: project.endDate?.toISOString() ?? null,
+    actual_end_date: null,
+    status: project.status,
+    type: 'Commercial',
+    visibility_mode: project.visibilityMode,
+    client_id: project.clientId,
+    client: project.client ? {
+      id: project.client.id,
+      company_name: project.client.companyName,
+      contact_name: project.client.contactName
+    } : null,
+    project_manager_id: null,
+    superintendent_id: null,
+    budget: null,
+    image_url: null,
+    assignments: project.assignments?.map(a => ({
+      user: {
+        id: a.user.id,
+        name: a.user.name,
+        email: a.user.email,
+        role: a.user.role
+      }
+    })) ?? [],
+    daily_log_count: project._count?.dailyLogs ?? 0,
+    hours_tracked: 0,
+    document_count: documentCount,
+    drawing_count: drawingCount,
+    crew_count: project._count?.assignments ?? 0,
+    created_at: project.createdAt.toISOString(),
+    updated_at: project.updatedAt.toISOString()
+  }
+}
+
 const updateProjectSchema = z.object({
   name: z.string().min(1).optional(),
   address: z.string().optional().nullable(),
@@ -43,6 +111,7 @@ export async function GET(
         },
         _count: {
           select: {
+            assignments: true,
             dailyLogs: true,
             timeEntries: true,
             files: true,
@@ -66,7 +135,16 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ project })
+    // Get drawing count for this project
+    const drawingCount = await prisma.file.count({
+      where: {
+        projectId: params.id,
+        category: 'DRAWINGS',
+        isLatest: true,
+      },
+    })
+
+    return NextResponse.json({ project: transformProject(project, drawingCount) })
   } catch (error) {
     console.error('Error fetching project:', error)
     return NextResponse.json({ error: 'Failed to fetch project' }, { status: 500 })
@@ -143,10 +221,27 @@ export async function PATCH(
             },
           },
         },
+        _count: {
+          select: {
+            assignments: true,
+            dailyLogs: true,
+            timeEntries: true,
+            files: true,
+          },
+        },
       },
     })
 
-    return NextResponse.json({ project })
+    // Get drawing count for this project
+    const drawingCount = await prisma.file.count({
+      where: {
+        projectId: params.id,
+        category: 'DRAWINGS',
+        isLatest: true,
+      },
+    })
+
+    return NextResponse.json({ project: transformProject(project, drawingCount) })
   } catch (error) {
     console.error('Error updating project:', error)
     return NextResponse.json({ error: 'Failed to update project' }, { status: 500 })

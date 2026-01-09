@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth-helpers'
 import Link from 'next/link'
 import { Plus, MapPin, Calendar, Users } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { getProjectStatusColor } from '@/lib/status-colors'
 import { Suspense } from 'react'
 import { ProjectCreatedToast } from './project-created-toast'
 
@@ -62,21 +63,6 @@ export default async function ProjectsPage() {
     orderBy: { createdAt: 'desc' },
   })
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ACTIVE':
-        return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
-      case 'ON_HOLD':
-        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
-      case 'COMPLETED':
-        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
-      case 'ARCHIVED':
-        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-      default:
-        return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-    }
-  }
-
   return (
     <div className="space-y-6">
       {/* Success Toast for newly created projects */}
@@ -122,7 +108,7 @@ export default async function ProjectsPage() {
             >
               <div className="flex justify-between items-start mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{project.name}</h3>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getProjectStatusColor(project.status)}`}>
                   {project.status.replace('_', ' ')}
                 </span>
               </div>
