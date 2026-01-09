@@ -342,11 +342,11 @@ struct DocumentCard: View {
                 // Icon
                 ZStack {
                     RoundedRectangle(cornerRadius: AppSpacing.radiusMedium)
-                        .fill(document.category.color.opacity(0.1))
+                        .fill(document.safeCategory.color.opacity(0.1))
                         .frame(width: 44, height: 44)
-                    Image(systemName: document.category.icon)
+                    Image(systemName: document.safeCategory.icon)
                         .font(.system(size: 18))
-                        .foregroundColor(document.category.color)
+                        .foregroundColor(document.safeCategory.color)
                 }
 
                 // Info - more compact layout
@@ -356,9 +356,9 @@ struct DocumentCard: View {
                         .foregroundColor(AppColors.textPrimary)
                         .lineLimit(1)
 
-                    Text(document.category.rawValue)
+                    Text(document.safeCategory.rawValue)
                         .font(AppTypography.caption)
-                        .foregroundColor(document.category.color)
+                        .foregroundColor(document.safeCategory.color)
 
                     HStack(spacing: AppSpacing.xs) {
                         Text(document.fileSizeFormatted)
@@ -741,11 +741,11 @@ struct DocumentDetailView: View {
                     VStack(spacing: AppSpacing.md) {
                         ZStack {
                             RoundedRectangle(cornerRadius: AppSpacing.radiusLarge)
-                                .fill(document.category.color.opacity(0.1))
+                                .fill(document.safeCategory.color.opacity(0.1))
                                 .frame(width: 80, height: 80)
-                            Image(systemName: document.category.icon)
+                            Image(systemName: document.safeCategory.icon)
                                 .font(.system(size: 36))
-                                .foregroundColor(document.category.color)
+                                .foregroundColor(document.safeCategory.color)
                         }
 
                         Text(document.name)
@@ -754,7 +754,7 @@ struct DocumentDetailView: View {
                             .multilineTextAlignment(.center)
 
                         StatusBadge(
-                            text: document.category.rawValue,
+                            text: document.safeCategory.rawValue,
                             status: .active
                         )
                     }
@@ -763,7 +763,7 @@ struct DocumentDetailView: View {
                     // Document Details Card
                     AppCard {
                         VStack(spacing: AppSpacing.md) {
-                            DocumentDetailRow(icon: "folder.fill", label: "Category", value: document.category.rawValue)
+                            DocumentDetailRow(icon: "folder.fill", label: "Category", value: document.safeCategory.rawValue)
                             DocumentDetailRow(icon: "doc.fill", label: "Size", value: document.fileSizeFormatted)
                             DocumentDetailRow(icon: "person.fill", label: "Uploaded By", value: document.uploadedBy)
                             DocumentDetailRow(icon: "calendar", label: "Uploaded", value: formatDate(document.uploadedAt))
@@ -1026,7 +1026,7 @@ class DocumentsViewModel: ObservableObject {
             result = result.filter {
                 $0.name.localizedCaseInsensitiveContains(search) ||
                 ($0.description?.localizedCaseInsensitiveContains(search) ?? false) ||
-                $0.tags.contains { $0.localizedCaseInsensitiveContains(search) }
+                $0.safeTags.contains { $0.localizedCaseInsensitiveContains(search) }
             }
         }
 
