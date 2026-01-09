@@ -1000,12 +1000,11 @@ class DocumentsViewModel: ObservableObject {
             blasterIds: blasterIds
         )
 
-        if !documentService.documents.isEmpty {
-            documents = documentService.documents
-        } else {
-            // Fallback to mock data if no documents from API
-            documents = Document.mockDocuments
-        }
+        print("[DocumentsViewModel] documentService.documents count: \(documentService.documents.count)")
+        print("[DocumentsViewModel] documentService.error: \(documentService.error ?? "nil")")
+
+        // Use API data - don't fallback to mock data
+        documents = documentService.documents
     }
 
     func filteredDocuments(search: String, category: DocumentCategory?, projectId: String? = nil) -> [Document] {

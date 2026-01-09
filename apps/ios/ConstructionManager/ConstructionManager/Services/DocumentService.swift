@@ -83,16 +83,18 @@ class DocumentService: ObservableObject {
                 queryItems.append(URLQueryItem(name: "blasterIds", value: blasterIds.joined(separator: ",")))
             }
 
+            print("[DocumentService] Fetching documents...")
             let response: DocumentsAPIResponse = try await apiClient.get(
                 "/documents",
                 queryItems: queryItems.isEmpty ? nil : queryItems
             )
 
+            print("[DocumentService] Got \(response.documents.count) documents from API")
             self.documents = response.documents.map { $0.toDocument() }
             self.lastFetchTime = Date()
         } catch {
             self.error = error.localizedDescription
-            print("Failed to fetch documents: \(error)")
+            print("[DocumentService] Failed to fetch documents: \(error)")
         }
     }
 
