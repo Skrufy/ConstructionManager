@@ -412,7 +412,7 @@ model ServiceLog {
 
 model File {
   id            String   @id @default(cuid())
-  projectId     String
+  projectId     String?  // Nullable for company-wide documents
   dailyLogId    String?
   name          String
   type          String   // image, document, video
@@ -434,7 +434,7 @@ model File {
   pageCount      Int?     // Number of pages (for PDFs)
   isAdminOnly    Boolean  @default(false) // If true, only admins can view this document
 
-  project       Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project       Project?          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   dailyLog      DailyLog?         @relation(fields: [dailyLogId], references: [id])
   uploader      User              @relation(fields: [uploadedBy], references: [id])
   revisions     DocumentRevision[]

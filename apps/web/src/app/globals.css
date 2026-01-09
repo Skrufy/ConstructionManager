@@ -240,6 +240,16 @@
     @apply fixed inset-0 bg-green-600 flex flex-col items-center justify-center z-50 text-white;
   }
 
+  /* ===== DATE INPUT CALENDAR ICON ===== */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    @apply cursor-pointer opacity-70 hover:opacity-100;
+    filter: invert(0);
+  }
+
+  :is(.dark input[type="date"])::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
+
   /* ===== CUSTOM RANGE SLIDER ===== */
   input[type="range"] {
     @apply h-3 appearance-none bg-gray-200 rounded-full cursor-pointer;
