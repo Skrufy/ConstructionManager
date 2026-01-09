@@ -794,13 +794,13 @@ struct DocumentDetailView: View {
                     }
 
                     // Tags
-                    if !document.tags.isEmpty {
+                    if !document.safeTags.isEmpty {
                         VStack(alignment: .leading, spacing: AppSpacing.xs) {
                             Text("documents.tags".localized)
                                 .font(AppTypography.label)
                                 .foregroundColor(AppColors.textSecondary)
                             FlowLayout(spacing: AppSpacing.xs) {
-                                ForEach(document.tags, id: \.self) { tag in
+                                ForEach(document.safeTags, id: \.self) { tag in
                                     Text(tag)
                                         .font(AppTypography.caption)
                                         .foregroundColor(AppColors.textSecondary)
