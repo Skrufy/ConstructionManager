@@ -4,6 +4,84 @@ import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
+// Transform document to snake_case format for iOS/Android
+function transformDocument(doc: {
+  id: string
+  projectId: string | null
+  name: string
+  type: string
+  storagePath: string
+  category: string | null
+  description: string | null
+  tags: string[] | null
+  gpsLatitude: number | null
+  gpsLongitude: number | null
+  currentVersion: number
+  isLatest: boolean
+  isAdminOnly: boolean
+  createdAt: Date
+  uploadedBy: string
+  project?: { id: string; name: string; address: string | null } | null
+  uploader?: { id: string; name: string } | null
+  blasterAssignments?: Array<{ blaster: { id: string; name: string; email: string } }>
+  metadata?: {
+    discipline: string | null
+    drawingNumber: string | null
+    sheetTitle: string | null
+    revision: string | null
+    scale: string | null
+    building: string | null
+    floor: string | null
+    zone: string | null
+  } | null
+  _count?: { revisions: number; annotations: number }
+}) {
+  return {
+    id: doc.id,
+    project_id: doc.projectId,
+    user_id: null, // Not tracked in current schema
+    name: doc.name,
+    description: doc.description,
+    category: doc.category,
+    file_url: doc.storagePath,
+    thumbnail_url: null, // Not tracked in current schema
+    file_type: doc.type,
+    file_size: 0, // Not tracked - would need file metadata
+    uploaded_by: doc.uploadedBy,
+    uploaded_at: doc.createdAt.toISOString(),
+    expires_at: null, // Not tracked in current schema
+    tags: doc.tags ?? [],
+    blaster_assignments: doc.blasterAssignments?.map(a => ({
+      id: a.blaster.id,
+      blaster: {
+        id: a.blaster.id,
+        name: a.blaster.name
+      }
+    })) ?? null,
+    // Additional fields for web/admin
+    storage_path: doc.storagePath,
+    gps_latitude: doc.gpsLatitude,
+    gps_longitude: doc.gpsLongitude,
+    current_version: doc.currentVersion,
+    is_latest: doc.isLatest,
+    is_admin_only: doc.isAdminOnly,
+    created_at: doc.createdAt.toISOString(),
+    updated_at: doc.createdAt.toISOString(), // File model doesn't have updatedAt
+    project: doc.project ? {
+      id: doc.project.id,
+      name: doc.project.name,
+      address: doc.project.address
+    } : null,
+    uploader: doc.uploader ? {
+      id: doc.uploader.id,
+      name: doc.uploader.name
+    } : null,
+    metadata: doc.metadata,
+    revision_count: doc._count?.revisions ?? 0,
+    annotation_count: doc._count?.annotations ?? 0
+  }
+}
+
 // GET /api/documents - Get documents with filtering and revision info
 export async function GET(request: NextRequest) {
   try {
@@ -150,12 +228,32 @@ export async function GET(request: NextRequest) {
       prisma.file.count({ where })
     ])
 
-    // Transform documents to include blasters array
-    const documentsWithBlasters = documents.map(doc => ({
-      ...doc,
-      blasters: doc.blasterAssignments.map(assignment => assignment.blaster),
-      blasterAssignments: undefined // Remove junction records from response
-    }))
+    // Transform documents to snake_case format for mobile
+    const transformedDocuments = documents.map(doc => {
+      const transformInput = {
+        id: doc.id,
+        projectId: doc.projectId,
+        name: doc.name,
+        type: doc.type,
+        storagePath: doc.storagePath,
+        category: doc.category,
+        description: doc.description,
+        tags: doc.tags as string[] | null,
+        gpsLatitude: doc.gpsLatitude,
+        gpsLongitude: doc.gpsLongitude,
+        currentVersion: doc.currentVersion,
+        isLatest: doc.isLatest,
+        isAdminOnly: doc.isAdminOnly,
+        createdAt: doc.createdAt,
+        uploadedBy: doc.uploadedBy,
+        project: doc.project,
+        uploader: doc.uploader,
+        blasterAssignments: doc.blasterAssignments.map(a => ({ blaster: a.blaster })),
+        metadata: doc.metadata,
+        _count: doc._count
+      }
+      return transformDocument(transformInput)
+    })
 
     // Get category counts
     const categoryCounts = await prisma.file.groupBy({
@@ -165,7 +263,7 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json({
-      documents: documentsWithBlasters,
+      documents: transformedDocuments,
       pagination: {
         page,
         limit,
@@ -253,7 +351,7 @@ export async function POST(request: NextRequest) {
         }
       },
       include: {
-        project: { select: { id: true, name: true } },
+        project: { select: { id: true, name: true, address: true } },
         uploader: { select: { id: true, name: true } },
         blasterAssignments: {
           include: {
@@ -276,14 +374,32 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Transform response to include blasters array
-    const documentWithBlasters = {
-      ...document,
-      blasters: document.blasterAssignments.map(assignment => assignment.blaster),
-      blasterAssignments: undefined
+    // Transform response to snake_case format for mobile
+    const transformInput = {
+      id: document.id,
+      projectId: document.projectId,
+      name: document.name,
+      type: document.type,
+      storagePath: document.storagePath,
+      category: document.category,
+      description: document.description,
+      tags: document.tags as string[] | null,
+      gpsLatitude: document.gpsLatitude,
+      gpsLongitude: document.gpsLongitude,
+      currentVersion: document.currentVersion,
+      isLatest: document.isLatest,
+      isAdminOnly: document.isAdminOnly,
+      createdAt: document.createdAt,
+      uploadedBy: document.uploadedBy,
+      project: document.project,
+      uploader: document.uploader,
+      blasterAssignments: document.blasterAssignments.map(a => ({ blaster: a.blaster })),
+      metadata: null,
+      _count: undefined
     }
+    const transformedDocument = transformDocument(transformInput)
 
-    return NextResponse.json({ document: documentWithBlasters }, { status: 201 })
+    return NextResponse.json({ document: transformedDocument }, { status: 201 })
   } catch (error) {
     console.error('Error creating document:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

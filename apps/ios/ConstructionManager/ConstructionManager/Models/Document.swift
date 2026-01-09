@@ -15,22 +15,37 @@ struct Document: Identifiable, Codable {
     let userId: String?
     let name: String
     let description: String?
-    let category: DocumentCategory
-    let fileUrl: String
+    let category: DocumentCategory?  // Optional for resilience
+    let fileUrl: String?  // Optional - storagePath may be used
     let thumbnailUrl: String?
-    let fileType: String
-    let fileSize: Int64
-    let uploadedBy: String
-    let uploadedAt: Date
+    let fileType: String?  // Optional for resilience
+    let fileSize: Int64?  // Optional - not always provided
+    let uploadedBy: String?  // Optional for resilience
+    let uploadedAt: Date?  // Optional for resilience
     let expiresAt: Date?
-    let tags: [String]
+    let tags: [String]?  // Optional for resilience
     let blasterAssignments: [BlasterAssignment]?
 
+    // Additional API fields
+    let storagePath: String?
+    let createdAt: Date?
+    let updatedAt: Date?
+
+    // Safe accessor for file URL - prefer fileUrl, fallback to storagePath
+    var safeFileUrl: String { fileUrl ?? storagePath ?? "" }
+
+    // Safe accessor for category with default
+    var safeCategory: DocumentCategory { category ?? .other }
+
+    // Safe accessor for tags
+    var safeTags: [String] { tags ?? [] }
+
     var fileSizeFormatted: String {
+        guard let size = fileSize else { return "Unknown" }
         let bcf = ByteCountFormatter()
         bcf.allowedUnits = [.useMB, .useKB]
         bcf.countStyle = .file
-        return bcf.string(fromByteCount: fileSize)
+        return bcf.string(fromByteCount: size)
     }
 
     var isExpired: Bool {
@@ -89,15 +104,22 @@ struct BlasterInfo: Codable {
 
 // MARK: - Document Category
 enum DocumentCategory: String, Codable, CaseIterable {
-    case license = "License"
-    case certification = "Certification"
-    case insurance = "Insurance"
-    case contract = "Contract"
-    case permit = "Permit"
-    case report = "Report"
-    case photo = "Photo"
-    case blasting = "Blasting"
-    case other = "Other"
+    case license = "LICENSE"
+    case certification = "CERTIFICATION"
+    case insurance = "INSURANCE"
+    case contract = "CONTRACT"
+    case permit = "PERMIT"
+    case report = "REPORT"
+    case photo = "PHOTO"
+    case blasting = "BLASTING"
+    case other = "OTHER"
+
+    // Custom decoder to handle case-insensitive values
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self).uppercased()
+        self = DocumentCategory(rawValue: rawValue) ?? .other
+    }
 
     var displayName: String {
         switch self {
@@ -160,7 +182,10 @@ extension Document {
             uploadedAt: Date(),
             expiresAt: Calendar.current.date(byAdding: .month, value: 6, to: Date()),
             tags: ["license", "contractor"],
-            blasterAssignments: nil
+            blasterAssignments: nil,
+            storagePath: nil,
+            createdAt: Date(),
+            updatedAt: Date()
         ),
         Document(
             id: "2",
@@ -177,7 +202,10 @@ extension Document {
             uploadedAt: Date(),
             expiresAt: Calendar.current.date(byAdding: .day, value: 15, to: Date()),
             tags: ["osha", "safety", "training"],
-            blasterAssignments: nil
+            blasterAssignments: nil,
+            storagePath: nil,
+            createdAt: Date(),
+            updatedAt: Date()
         ),
         Document(
             id: "3",
@@ -194,7 +222,10 @@ extension Document {
             uploadedAt: Date(),
             expiresAt: Calendar.current.date(byAdding: .month, value: 2, to: Date()),
             tags: ["insurance", "liability"],
-            blasterAssignments: nil
+            blasterAssignments: nil,
+            storagePath: nil,
+            createdAt: Date(),
+            updatedAt: Date()
         ),
         Document(
             id: "4",
@@ -211,7 +242,10 @@ extension Document {
             uploadedAt: Date(),
             expiresAt: nil,
             tags: ["permit", "city"],
-            blasterAssignments: nil
+            blasterAssignments: nil,
+            storagePath: nil,
+            createdAt: Date(),
+            updatedAt: Date()
         ),
         Document(
             id: "5",
@@ -228,7 +262,10 @@ extension Document {
             uploadedAt: Date(),
             expiresAt: nil,
             tags: ["contract", "electrical"],
-            blasterAssignments: nil
+            blasterAssignments: nil,
+            storagePath: nil,
+            createdAt: Date(),
+            updatedAt: Date()
         )
     ]
 }

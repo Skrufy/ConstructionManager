@@ -30,8 +30,8 @@ struct Project: Identifiable, Codable {
     let budget: Double?
     let description: String?
     let imageUrl: String?
-    let createdAt: Date
-    let updatedAt: Date
+    let createdAt: Date?  // Optional for API resilience
+    let updatedAt: Date?  // Optional for API resilience
 
     // Stats from API
     var dailyLogCount: Int
@@ -42,13 +42,17 @@ struct Project: Identifiable, Codable {
 
     // Note: No explicit CodingKeys needed - APIClient uses convertFromSnakeCase
 
+    // Safe accessors for dates with fallback to current date
+    var safeCreatedAt: Date { createdAt ?? Date() }
+    var safeUpdatedAt: Date { updatedAt ?? Date() }
+
     // Computed property for backwards compatibility
     var clientName: String? {
         return client?.companyName
     }
 
     // Default initializer for when stats aren't available
-    init(id: String, name: String, number: String?, address: String, city: String, state: String, zipCode: String, status: ProjectStatus, type: ProjectType, gpsLatitude: Double?, gpsLongitude: Double?, startDate: Date?, estimatedEndDate: Date?, actualEndDate: Date?, clientId: String?, client: ClientSummary?, projectManagerId: String?, superintendentId: String?, budget: Double?, description: String?, imageUrl: String?, createdAt: Date, updatedAt: Date, dailyLogCount: Int = 0, hoursTracked: Double = 0, documentCount: Int = 0, drawingCount: Int = 0, crewCount: Int = 0) {
+    init(id: String, name: String, number: String?, address: String, city: String, state: String, zipCode: String, status: ProjectStatus, type: ProjectType, gpsLatitude: Double?, gpsLongitude: Double?, startDate: Date?, estimatedEndDate: Date?, actualEndDate: Date?, clientId: String?, client: ClientSummary?, projectManagerId: String?, superintendentId: String?, budget: Double?, description: String?, imageUrl: String?, createdAt: Date? = Date(), updatedAt: Date? = Date(), dailyLogCount: Int = 0, hoursTracked: Double = 0, documentCount: Int = 0, drawingCount: Int = 0, crewCount: Int = 0) {
         self.id = id
         self.name = name
         self.number = number
