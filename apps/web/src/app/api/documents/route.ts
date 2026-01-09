@@ -151,36 +151,43 @@ export async function GET(request: NextRequest) {
     ])
 
     // Transform documents to snake_case format for mobile
-    const transformedDocuments = documents.map(doc => ({
-      id: doc.id,
-      project_id: doc.projectId,
-      name: doc.name,
-      description: doc.description,
-      category: doc.category,
-      file_url: doc.storagePath,
-      storage_path: doc.storagePath,
-      file_type: doc.type,
-      file_size: 0,
-      uploaded_by: doc.uploadedBy,
-      uploaded_at: doc.createdAt.toISOString(),
-      created_at: doc.createdAt.toISOString(),
-      updated_at: doc.createdAt.toISOString(),
-      tags: (doc.tags as string[]) ?? [],
-      gps_latitude: doc.gpsLatitude,
-      gps_longitude: doc.gpsLongitude,
-      current_version: doc.currentVersion,
-      is_latest: doc.isLatest,
-      is_admin_only: doc.isAdminOnly,
-      project: doc.project,
-      uploader: doc.uploader,
-      blaster_assignments: doc.blasterAssignments?.map(a => ({
-        id: a.blaster.id,
-        blaster: { id: a.blaster.id, name: a.blaster.name }
-      })) ?? [],
-      metadata: doc.metadata,
-      revision_count: doc._count?.revisions ?? 0,
-      annotation_count: doc._count?.annotations ?? 0
-    }))
+    const transformedDocuments = documents.map(doc => {
+      // Safely map blaster assignments (handle null blasters)
+      const blasterAssignments = (doc.blasterAssignments ?? [])
+        .filter(a => a.blaster != null)
+        .map(a => ({
+          id: a.blaster.id,
+          blaster: { id: a.blaster.id, name: a.blaster.name }
+        }))
+
+      return {
+        id: doc.id,
+        project_id: doc.projectId,
+        name: doc.name,
+        description: doc.description,
+        category: doc.category,
+        file_url: doc.storagePath,
+        storage_path: doc.storagePath,
+        file_type: doc.type,
+        file_size: 0,
+        uploaded_by: doc.uploadedBy,
+        uploaded_at: doc.createdAt?.toISOString() ?? new Date().toISOString(),
+        created_at: doc.createdAt?.toISOString() ?? new Date().toISOString(),
+        updated_at: doc.createdAt?.toISOString() ?? new Date().toISOString(),
+        tags: Array.isArray(doc.tags) ? doc.tags : [],
+        gps_latitude: doc.gpsLatitude,
+        gps_longitude: doc.gpsLongitude,
+        current_version: doc.currentVersion,
+        is_latest: doc.isLatest,
+        is_admin_only: doc.isAdminOnly,
+        project: doc.project,
+        uploader: doc.uploader,
+        blaster_assignments: blasterAssignments,
+        metadata: doc.metadata,
+        revision_count: doc._count?.revisions ?? 0,
+        annotation_count: doc._count?.annotations ?? 0
+      }
+    })
 
     // Get category counts
     const categoryCounts = await prisma.file.groupBy({
