@@ -6,6 +6,8 @@ import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
 
+// Force Vercel redeploy - v2
+
 // Helper to transform project to snake_case format for iOS
 function transformProject(project: {
   id: string

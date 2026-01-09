@@ -109,6 +109,9 @@ struct APIProject: Decodable {
 
     /// Convert to local Project model
     func toProject() -> Project {
+        // DEBUG: Print what we received from API
+        print("[APIProject] Converting \(name): dailyLogCount=\(dailyLogCount ?? -1), documentCount=\(documentCount ?? -1), drawingCount=\(drawingCount ?? -1), crewCount=\(crewCount ?? -1)")
+
         // Parse address components (backend stores as single string)
         let addressParts = (address ?? "").components(separatedBy: ", ")
         let streetAddress = addressParts.first ?? ""
