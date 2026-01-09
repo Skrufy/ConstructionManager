@@ -384,17 +384,7 @@ struct DocumentAPIModel: Decodable {
     let uploader: UserRef?
     let blasterAssignments: [BlasterAssignmentRef]?
 
-    enum CodingKeys: String, CodingKey {
-        case id, name, category, description, tags, project, uploader
-        case projectId = "project_id"
-        case fileType = "file_type"
-        case storagePath = "storage_path"
-        case fileSize = "file_size"
-        case createdAt = "created_at"
-        case uploadedAt = "uploaded_at"
-        case uploadedBy = "uploaded_by"
-        case blasterAssignments = "blaster_assignments"
-    }
+    // No explicit CodingKeys needed - APIClient decoder uses .convertFromSnakeCase
 
     struct ProjectRef: Decodable {
         let id: String

@@ -41,21 +41,24 @@ struct APIProject: Decodable {
     let drawingCount: Int?
     let crewCount: Int?
 
+    // NOTE: APIClient uses .convertFromSnakeCase decoder, so we do NOT need
+    // explicit snake_case mappings here. The decoder automatically converts
+    // daily_log_count -> dailyLogCount, etc.
     enum CodingKeys: String, CodingKey {
         case id, name, address, status, description, client, assignments
-        case gpsLatitude = "gps_latitude"
-        case gpsLongitude = "gps_longitude"
-        case startDate = "start_date"
-        case endDate = "end_date"
-        case visibilityMode = "visibility_mode"
-        case clientId = "client_id"
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-        case dailyLogCount = "daily_log_count"
-        case hoursTracked = "hours_tracked"
-        case documentCount = "document_count"
-        case drawingCount = "drawing_count"
-        case crewCount = "crew_count"
+        case gpsLatitude
+        case gpsLongitude
+        case startDate
+        case endDate
+        case visibilityMode
+        case clientId
+        case createdAt
+        case updatedAt
+        case dailyLogCount
+        case hoursTracked
+        case documentCount
+        case drawingCount
+        case crewCount
     }
 
     // Custom decoder to handle missing fields
@@ -87,12 +90,7 @@ struct APIProject: Decodable {
         let id: String
         let companyName: String
         let contactName: String?
-
-        enum CodingKeys: String, CodingKey {
-            case id
-            case companyName = "company_name"
-            case contactName = "contact_name"
-        }
+        // No CodingKeys needed - decoder uses .convertFromSnakeCase
     }
 
     struct ProjectAssignment: Decodable {
@@ -185,19 +183,7 @@ struct APITimeEntry: Decodable {
     let projectName: String?
     let userName: String?
 
-    enum CodingKeys: String, CodingKey {
-        case id, status, notes
-        case userId = "user_id"
-        case projectId = "project_id"
-        case clockIn = "clock_in"
-        case clockOut = "clock_out"
-        case gpsLatitudeIn = "gps_latitude_in"
-        case gpsLongitudeIn = "gps_longitude_in"
-        case gpsLatitudeOut = "gps_latitude_out"
-        case gpsLongitudeOut = "gps_longitude_out"
-        case projectName = "project_name"
-        case userName = "user_name"
-    }
+    // No explicit CodingKeys needed - decoder uses .convertFromSnakeCase
 
     /// Convert to local TimeEntry model
     func toTimeEntry() -> TimeEntry {
@@ -252,34 +238,14 @@ struct APIDailyLog: Decodable {
     let materialsCount: Int?
     let issuesCount: Int?
 
-    enum CodingKeys: String, CodingKey {
-        case id, date, notes, status
-        case projectId = "project_id"
-        case submittedBy = "submitted_by"
-        case weatherData = "weather_data"
-        case crewCount = "crew_count"
-        case totalHours = "total_hours"
-        case weatherDelay = "weather_delay"
-        case weatherDelayNotes = "weather_delay_notes"
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-        case projectName = "project_name"
-        case submitterName = "submitter_name"
-        case entriesCount = "entries_count"
-        case materialsCount = "materials_count"
-        case issuesCount = "issues_count"
-    }
+    // No explicit CodingKeys needed - decoder uses .convertFromSnakeCase
 
     struct WeatherDataJSON: Decodable {
         let temperature: Double?
         let condition: String?
         let humidity: Int?
         let windSpeed: Double?
-
-        enum CodingKeys: String, CodingKey {
-            case temperature, condition, humidity
-            case windSpeed = "wind_speed"
-        }
+        // No explicit CodingKeys needed - decoder uses .convertFromSnakeCase
     }
 
     /// Convert to local DailyLog model
@@ -339,13 +305,7 @@ struct APINotification: Decodable {
     let actionUrl: String?
     let createdAt: Date
 
-    enum CodingKeys: String, CodingKey {
-        case id, type, title, message, severity, category, data, read
-        case userId = "user_id"
-        case readAt = "read_at"
-        case actionUrl = "action_url"
-        case createdAt = "created_at"
-    }
+    // No explicit CodingKeys needed - decoder uses .convertFromSnakeCase
 
     struct NotificationData: Decodable {
         // Flexible JSON data - can contain different fields
@@ -406,17 +366,7 @@ struct APIDocument: Decodable {
     let metadata: APIDocumentMetadata?
     let blasterAssignments: [APIBlasterAssignment]?
 
-    enum CodingKeys: String, CodingKey {
-        case id, name, type, category, description, tags, project, uploader, metadata
-        case projectId = "project_id"
-        case storagePath = "storage_path"
-        case gpsLatitude = "gps_latitude"
-        case gpsLongitude = "gps_longitude"
-        case currentVersion = "current_version"
-        case isLatest = "is_latest"
-        case createdAt = "created_at"
-        case blasterAssignments = "blaster_assignments"
-    }
+    // No explicit CodingKeys needed - decoder uses .convertFromSnakeCase
 
     struct APIDocumentProject: Decodable {
         let id: String
@@ -442,12 +392,7 @@ struct APIDocument: Decodable {
         let building: String?
         let floor: String?
         let zone: String?
-
-        enum CodingKeys: String, CodingKey {
-            case discipline, revision, scale, building, floor, zone
-            case drawingNumber = "drawing_number"
-            case sheetTitle = "sheet_title"
-        }
+        // No explicit CodingKeys needed - decoder uses .convertFromSnakeCase
     }
 
     /// Convert to local Document model
@@ -550,14 +495,7 @@ struct APIProjectAssignment: Decodable {
     let roleOverride: String?
     let createdAt: Date
     let user: APITeamUser
-
-    enum CodingKeys: String, CodingKey {
-        case id, user
-        case userId = "user_id"
-        case projectId = "project_id"
-        case roleOverride = "role_override"
-        case createdAt = "created_at"
-    }
+    // No explicit CodingKeys needed - decoder uses .convertFromSnakeCase
 
     /// Convert to local TeamMember model
     func toTeamMember() -> TeamMember {
@@ -605,12 +543,7 @@ struct APIUserListItem: Decodable {
     let phone: String?
     let createdAt: Date
     let updatedAt: Date?
-
-    enum CodingKeys: String, CodingKey {
-        case id, name, email, role, status, phone
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-    }
+    // No explicit CodingKeys needed - decoder uses .convertFromSnakeCase
 }
 
 // MARK: - TeamMember Model
