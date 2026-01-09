@@ -765,8 +765,8 @@ struct DocumentDetailView: View {
                         VStack(spacing: AppSpacing.md) {
                             DocumentDetailRow(icon: "folder.fill", label: "Category", value: document.safeCategory.rawValue)
                             DocumentDetailRow(icon: "doc.fill", label: "Size", value: document.fileSizeFormatted)
-                            DocumentDetailRow(icon: "person.fill", label: "Uploaded By", value: document.uploadedBy)
-                            DocumentDetailRow(icon: "calendar", label: "Uploaded", value: formatDate(document.uploadedAt))
+                            DocumentDetailRow(icon: "person.fill", label: "Uploaded By", value: document.uploadedBy ?? "Unknown")
+                            DocumentDetailRow(icon: "calendar", label: "Uploaded", value: formatDate(document.uploadedAt ?? Date()))
 
                             if let expiresAt = document.expiresAt {
                                 DocumentDetailRow(
