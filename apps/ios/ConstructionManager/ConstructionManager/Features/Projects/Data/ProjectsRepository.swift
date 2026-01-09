@@ -211,8 +211,8 @@ class ProjectsRepository: ObservableObject {
                     dailyLogCount: apiProject.dailyLogCount ?? 0,
                     documentCount: apiProject.documentCount ?? 0,
                     openIncidentCount: 0,
-                    createdAt: apiProject.createdAt,
-                    updatedAt: apiProject.updatedAt
+                    createdAt: apiProject.createdAt ?? Date(),
+                    updatedAt: apiProject.updatedAt ?? Date()
                 )
             }
             self.lastFetchTime = Date()
@@ -272,8 +272,8 @@ class ProjectsRepository: ObservableObject {
                 dailyLogCount: apiProject.dailyLogCount ?? 0,
                 documentCount: apiProject.documentCount ?? 0,
                 openIncidentCount: 0,
-                createdAt: apiProject.createdAt,
-                updatedAt: apiProject.updatedAt
+                createdAt: apiProject.createdAt ?? Date(),
+                updatedAt: apiProject.updatedAt ?? Date()
             )
 
             return .success(detail)
