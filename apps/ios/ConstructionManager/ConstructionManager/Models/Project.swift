@@ -40,8 +40,6 @@ struct Project: Identifiable, Codable {
     var drawingCount: Int
     var crewCount: Int
 
-    // Note: No explicit CodingKeys needed - APIClient uses convertFromSnakeCase
-
     // Safe accessors for dates with fallback to current date
     var safeCreatedAt: Date { createdAt ?? Date() }
     var safeUpdatedAt: Date { updatedAt ?? Date() }
@@ -49,6 +47,61 @@ struct Project: Identifiable, Codable {
     // Computed property for backwards compatibility
     var clientName: String? {
         return client?.companyName
+    }
+
+    // Custom decoder to handle missing keys gracefully
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        number = try container.decodeIfPresent(String.self, forKey: .number)
+        address = try container.decodeIfPresent(String.self, forKey: .address) ?? ""
+        city = try container.decodeIfPresent(String.self, forKey: .city) ?? ""
+        state = try container.decodeIfPresent(String.self, forKey: .state) ?? ""
+        zipCode = try container.decodeIfPresent(String.self, forKey: .zipCode) ?? ""
+        status = try container.decodeIfPresent(ProjectStatus.self, forKey: .status) ?? .active
+        type = try container.decodeIfPresent(ProjectType.self, forKey: .type) ?? .commercial
+        gpsLatitude = try container.decodeIfPresent(Double.self, forKey: .gpsLatitude)
+        gpsLongitude = try container.decodeIfPresent(Double.self, forKey: .gpsLongitude)
+        startDate = try container.decodeIfPresent(Date.self, forKey: .startDate)
+        estimatedEndDate = try container.decodeIfPresent(Date.self, forKey: .estimatedEndDate)
+        actualEndDate = try container.decodeIfPresent(Date.self, forKey: .actualEndDate)
+        clientId = try container.decodeIfPresent(String.self, forKey: .clientId)
+        client = try container.decodeIfPresent(ClientSummary.self, forKey: .client)
+        projectManagerId = try container.decodeIfPresent(String.self, forKey: .projectManagerId)
+        superintendentId = try container.decodeIfPresent(String.self, forKey: .superintendentId)
+        budget = try container.decodeIfPresent(Double.self, forKey: .budget)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        imageUrl = try container.decodeIfPresent(String.self, forKey: .imageUrl)
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
+        dailyLogCount = try container.decodeIfPresent(Int.self, forKey: .dailyLogCount) ?? 0
+        hoursTracked = try container.decodeIfPresent(Double.self, forKey: .hoursTracked) ?? 0
+        documentCount = try container.decodeIfPresent(Int.self, forKey: .documentCount) ?? 0
+        drawingCount = try container.decodeIfPresent(Int.self, forKey: .drawingCount) ?? 0
+        crewCount = try container.decodeIfPresent(Int.self, forKey: .crewCount) ?? 0
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, number, address, city, state, status, type, client, budget, description
+        case zipCode = "zip_code"
+        case gpsLatitude = "gps_latitude"
+        case gpsLongitude = "gps_longitude"
+        case startDate = "start_date"
+        case estimatedEndDate = "estimated_end_date"
+        case actualEndDate = "actual_end_date"
+        case clientId = "client_id"
+        case projectManagerId = "project_manager_id"
+        case superintendentId = "superintendent_id"
+        case imageUrl = "image_url"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case dailyLogCount = "daily_log_count"
+        case hoursTracked = "hours_tracked"
+        case documentCount = "document_count"
+        case drawingCount = "drawing_count"
+        case crewCount = "crew_count"
     }
 
     // Default initializer for when stats aren't available
