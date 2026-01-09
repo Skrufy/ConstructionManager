@@ -82,8 +82,8 @@ export async function GET(request: NextRequest) {
     if (type) where.type = type
     if (search) {
       const searchConditions = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
+        { name: { contains: search, mode: 'insensitive' as const } },
+        { description: { contains: search, mode: 'insensitive' as const } }
       ]
       if (where.OR) {
         // Merge with existing OR conditions
