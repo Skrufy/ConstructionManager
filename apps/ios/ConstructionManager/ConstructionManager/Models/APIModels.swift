@@ -30,8 +30,8 @@ struct APIProject: Decodable {
     let description: String?
     let clientId: String?
     let client: APIClientSummary?
-    let createdAt: Date
-    let updatedAt: Date
+    let createdAt: Date?  // Optional - API may not return this
+    let updatedAt: Date?  // Optional - API may not return this
     let assignments: [ProjectAssignment]?
 
     // Flattened count fields from API (not nested under _count)
@@ -56,6 +56,31 @@ struct APIProject: Decodable {
         case documentCount = "document_count"
         case drawingCount = "drawing_count"
         case crewCount = "crew_count"
+    }
+
+    // Custom decoder to handle missing fields
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        address = try container.decodeIfPresent(String.self, forKey: .address)
+        gpsLatitude = try container.decodeIfPresent(Double.self, forKey: .gpsLatitude)
+        gpsLongitude = try container.decodeIfPresent(Double.self, forKey: .gpsLongitude)
+        startDate = try container.decodeIfPresent(Date.self, forKey: .startDate)
+        endDate = try container.decodeIfPresent(Date.self, forKey: .endDate)
+        status = try container.decodeIfPresent(String.self, forKey: .status) ?? "ACTIVE"
+        visibilityMode = try container.decodeIfPresent(String.self, forKey: .visibilityMode)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        clientId = try container.decodeIfPresent(String.self, forKey: .clientId)
+        client = try container.decodeIfPresent(APIClientSummary.self, forKey: .client)
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
+        assignments = try container.decodeIfPresent([ProjectAssignment].self, forKey: .assignments)
+        dailyLogCount = try container.decodeIfPresent(Int.self, forKey: .dailyLogCount)
+        hoursTracked = try container.decodeIfPresent(Double.self, forKey: .hoursTracked)
+        documentCount = try container.decodeIfPresent(Int.self, forKey: .documentCount)
+        drawingCount = try container.decodeIfPresent(Int.self, forKey: .drawingCount)
+        crewCount = try container.decodeIfPresent(Int.self, forKey: .crewCount)
     }
 
     struct APIClientSummary: Decodable {
