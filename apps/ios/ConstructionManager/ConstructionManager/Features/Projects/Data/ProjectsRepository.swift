@@ -28,6 +28,8 @@ struct ProjectSummary: Identifiable, Codable {
     let address: ProjectAddress
     let dailyLogCount: Int
     let documentCount: Int
+    let drawingCount: Int
+    let crewCount: Int
     let openIncidentCount: Int
     let createdAt: Date
     let updatedAt: Date
@@ -45,6 +47,8 @@ struct ProjectDetail: Identifiable, Codable {
     let team: [TeamMemberInfo]
     let dailyLogCount: Int
     let documentCount: Int
+    let drawingCount: Int
+    let crewCount: Int
     let openIncidentCount: Int
     let createdAt: Date
     let updatedAt: Date
@@ -210,6 +214,8 @@ class ProjectsRepository: ObservableObject {
                     ),
                     dailyLogCount: apiProject.dailyLogCount ?? 0,
                     documentCount: apiProject.documentCount ?? 0,
+                    drawingCount: apiProject.drawingCount ?? 0,
+                    crewCount: apiProject.crewCount ?? 0,
                     openIncidentCount: 0,
                     createdAt: apiProject.createdAt ?? Date(),
                     updatedAt: apiProject.updatedAt ?? Date()
@@ -271,6 +277,8 @@ class ProjectsRepository: ObservableObject {
                 team: [],
                 dailyLogCount: apiProject.dailyLogCount ?? 0,
                 documentCount: apiProject.documentCount ?? 0,
+                drawingCount: apiProject.drawingCount ?? 0,
+                crewCount: apiProject.crewCount ?? 0,
                 openIncidentCount: 0,
                 createdAt: apiProject.createdAt ?? Date(),
                 updatedAt: apiProject.updatedAt ?? Date()
