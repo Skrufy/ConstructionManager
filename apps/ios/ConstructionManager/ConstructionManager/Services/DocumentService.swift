@@ -371,17 +371,30 @@ struct DocumentAPIModel: Decodable {
     let id: String
     let projectId: String?
     let name: String
-    let type: String
-    let storagePath: String
+    let fileType: String?
+    let storagePath: String?
     let category: String?
     let description: String?
     let tags: [String]?
     let fileSize: Int?
-    let createdAt: Date
+    let createdAt: Date?
+    let uploadedAt: Date?
     let uploadedBy: String?
     let project: ProjectRef?
-    let uploadedByUser: UserRef?
-    let blasters: [UserRef]?
+    let uploader: UserRef?
+    let blasterAssignments: [BlasterAssignmentRef]?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, category, description, tags, project, uploader
+        case projectId = "project_id"
+        case fileType = "file_type"
+        case storagePath = "storage_path"
+        case fileSize = "file_size"
+        case createdAt = "created_at"
+        case uploadedAt = "uploaded_at"
+        case uploadedBy = "uploaded_by"
+        case blasterAssignments = "blaster_assignments"
+    }
 
     struct ProjectRef: Decodable {
         let id: String
@@ -392,6 +405,16 @@ struct DocumentAPIModel: Decodable {
         let id: String
         let name: String
         let email: String?
+    }
+
+    struct BlasterAssignmentRef: Decodable {
+        let id: String
+        let blaster: BlasterRef
+    }
+
+    struct BlasterRef: Decodable {
+        let id: String
+        let name: String
     }
 
     func toDocument() -> Document {
@@ -409,13 +432,13 @@ struct DocumentAPIModel: Decodable {
         default: mappedCategory = .other
         }
 
-        // Convert blasters array to BlasterAssignment format
-        let localBlasterAssignments = blasters?.map { blaster in
+        // Convert blaster assignments to local model
+        let localBlasterAssignments = blasterAssignments?.map { assignment in
             BlasterAssignment(
-                id: blaster.id, // Using blaster ID as assignment ID
+                id: assignment.id,
                 blaster: BlasterInfo(
-                    id: blaster.id,
-                    name: blaster.name
+                    id: assignment.blaster.id,
+                    name: assignment.blaster.name
                 )
             )
         }
@@ -427,18 +450,18 @@ struct DocumentAPIModel: Decodable {
             name: name,
             description: description,
             category: mappedCategory,
-            fileUrl: storagePath,
+            fileUrl: storagePath ?? "",
             thumbnailUrl: nil,
-            fileType: type,
+            fileType: fileType ?? "document",
             fileSize: Int64(fileSize ?? 0),
-            uploadedBy: uploadedByUser?.name ?? "Unknown",
-            uploadedAt: createdAt,
+            uploadedBy: uploader?.name ?? "Unknown",
+            uploadedAt: uploadedAt ?? createdAt ?? Date(),
             expiresAt: nil,
             tags: tags ?? [],
             blasterAssignments: localBlasterAssignments,
-            storagePath: storagePath,
-            createdAt: createdAt,
-            updatedAt: createdAt  // Use createdAt since API doesn't have separate updatedAt
+            storagePath: storagePath ?? "",
+            createdAt: createdAt ?? Date(),
+            updatedAt: createdAt ?? Date()
         )
     }
 }
