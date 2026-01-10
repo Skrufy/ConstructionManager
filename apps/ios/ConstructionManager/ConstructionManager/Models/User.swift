@@ -95,7 +95,7 @@ enum UserStatus: String, Codable {
 }
 
 // MARK: - User Model
-struct User: Identifiable, Codable {
+struct User: Identifiable, Decodable {
     let id: String
     let name: String
     let email: String
@@ -106,8 +106,59 @@ struct User: Identifiable, Codable {
     let createdAt: Date
     let language: String?  // User's preferred language ("en" or "es")
     let companyTemplateName: String?  // Name of assigned company permission template
-    // Note: No explicit CodingKeys needed - APIClient uses convertFromSnakeCase
-    // which automatically converts created_at → createdAt, is_blaster → isBlaster, company_template_name → companyTemplateName
+
+    // Custom decoder to handle both flat and nested template name formats
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        email = try container.decode(String.self, forKey: .email)
+        phone = try container.decodeIfPresent(String.self, forKey: .phone)
+        role = try container.decode(UserRole.self, forKey: .role)
+        status = try container.decode(UserStatus.self, forKey: .status)
+        isBlaster = try container.decodeIfPresent(Bool.self, forKey: .isBlaster)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        language = try container.decodeIfPresent(String.self, forKey: .language)
+
+        // Try flat field first, then nested structure
+        if let flatName = try container.decodeIfPresent(String.self, forKey: .companyTemplateName) {
+            companyTemplateName = flatName
+        } else if let nested = try container.decodeIfPresent(CompanyPermissionWrapper.self, forKey: .companyPermission) {
+            companyTemplateName = nested.companyTemplate?.name
+        } else {
+            companyTemplateName = nil
+        }
+    }
+
+    // Manual init for creating User instances
+    init(id: String, name: String, email: String, phone: String?, role: UserRole, status: UserStatus, isBlaster: Bool?, createdAt: Date, language: String?, companyTemplateName: String?) {
+        self.id = id
+        self.name = name
+        self.email = email
+        self.phone = phone
+        self.role = role
+        self.status = status
+        self.isBlaster = isBlaster
+        self.createdAt = createdAt
+        self.language = language
+        self.companyTemplateName = companyTemplateName
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, email, phone, role, status, isBlaster, createdAt, language
+        case companyTemplateName
+        case companyPermission
+    }
+
+    // Helper structs for nested decoding
+    private struct CompanyPermissionWrapper: Decodable {
+        let companyTemplate: CompanyTemplateWrapper?
+    }
+
+    private struct CompanyTemplateWrapper: Decodable {
+        let name: String?
+    }
 
     var initials: String {
         let components = name.split(separator: " ")

@@ -216,11 +216,16 @@ class OfflineDataStore: ObservableObject {
 
     // Users (team members)
     func saveUsers(_ users: [User]) {
-        save(users, dataType: .users)
+        // Convert to cacheable format for encoding
+        let cacheableUsers = users.map { CacheableUser(from: $0) }
+        save(cacheableUsers, dataType: .users)
     }
 
     func loadUsers() -> [User] {
-        return load(dataType: .users) ?? []
+        guard let cacheableUsers: [CacheableUser] = load(dataType: .users) else {
+            return []
+        }
+        return cacheableUsers.map { $0.toUser() }
     }
 
     // MARK: - Sync Management
@@ -299,5 +304,48 @@ class OfflineDataStore: ObservableObject {
     func hasOfflineData(for dataType: DataType) -> Bool {
         let fileURL = offlineDataDirectory.appendingPathComponent(dataType.filename)
         return fileManager.fileExists(atPath: fileURL.path)
+    }
+}
+
+// MARK: - Cacheable User Model
+/// A Codable version of User for offline storage (since User has custom Decodable implementation)
+private struct CacheableUser: Codable {
+    let id: String
+    let name: String
+    let email: String
+    let phone: String?
+    let role: String
+    let status: String
+    let isBlaster: Bool?
+    let createdAt: Date
+    let language: String?
+    let companyTemplateName: String?
+
+    init(from user: User) {
+        self.id = user.id
+        self.name = user.name
+        self.email = user.email
+        self.phone = user.phone
+        self.role = user.role.rawValue
+        self.status = user.status.rawValue
+        self.isBlaster = user.isBlaster
+        self.createdAt = user.createdAt
+        self.language = user.language
+        self.companyTemplateName = user.companyTemplateName
+    }
+
+    func toUser() -> User {
+        User(
+            id: id,
+            name: name,
+            email: email,
+            phone: phone,
+            role: UserRole(rawValue: role) ?? .fieldWorker,
+            status: UserStatus(rawValue: status) ?? .active,
+            isBlaster: isBlaster,
+            createdAt: createdAt,
+            language: language,
+            companyTemplateName: companyTemplateName
+        )
     }
 }

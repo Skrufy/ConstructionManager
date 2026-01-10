@@ -84,7 +84,15 @@ class AdminService: ObservableObject {
         defer { isLoading = false }
 
         do {
-            let _: User = try await apiClient.put("/users/\(user.id)", body: user)
+            let request = UpdateUserRequest(
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                role: user.role.rawValue,
+                status: user.status.rawValue,
+                language: user.language
+            )
+            let _: User = try await apiClient.put("/users/\(user.id)", body: request)
             await fetchUsers()
             return true
         } catch {
@@ -92,6 +100,15 @@ class AdminService: ObservableObject {
             self.error = error.localizedDescription
             return false
         }
+    }
+
+    private struct UpdateUserRequest: Encodable {
+        let name: String
+        let email: String
+        let phone: String?
+        let role: String
+        let status: String
+        let language: String?
     }
 
     func updateUserRole(userId: String, role: UserRole) async -> Bool {
