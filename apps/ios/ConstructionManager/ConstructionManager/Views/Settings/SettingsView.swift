@@ -997,19 +997,28 @@ struct SettingsToggle: View {
 
 // MARK: - Users Tab
 struct UsersTab: View {
-    @State private var users = User.mockUsers
+    @StateObject private var userService = UserService.shared
     @State private var searchText = ""
     @State private var showingAddUser = false
     @State private var selectedRole: UserRole?
+    @State private var selectedUser: User?
+    @State private var showingUserDetail = false
 
     var filteredUsers: [User] {
-        users.filter { user in
+        let users = userService.users.isEmpty ? User.mockUsers : userService.users
+        return users.filter { user in
             let matchesSearch = searchText.isEmpty ||
                 user.name.localizedCaseInsensitiveContains(searchText) ||
                 user.email.localizedCaseInsensitiveContains(searchText)
             let matchesRole = selectedRole == nil || user.role == selectedRole
             return matchesSearch && matchesRole
         }
+    }
+
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    private var maxContentWidth: CGFloat {
+        horizontalSizeClass == .regular ? 600 : .infinity
     }
 
     var body: some View {
@@ -1089,20 +1098,38 @@ struct UsersTab: View {
                 // User List
                 VStack(spacing: AppSpacing.sm) {
                     ForEach(filteredUsers) { user in
-                        SettingsUserCard(user: user)
-                            .transition(.asymmetric(
-                                insertion: .opacity.combined(with: .move(edge: .top)),
-                                removal: .opacity
-                            ))
+                        Button(action: {
+                            selectedUser = user
+                            showingUserDetail = true
+                        }) {
+                            SettingsUserCard(user: user)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .move(edge: .top)),
+                            removal: .opacity
+                        ))
                     }
                 }
                 .animation(.spring(response: 0.3, dampingFraction: 0.7), value: filteredUsers.map { $0.id })
             }
+            .frame(maxWidth: maxContentWidth)
             .padding(AppSpacing.md)
             .padding(.bottom, AppSpacing.xl)
+            .frame(maxWidth: .infinity) // Center the content
+        }
+        .onAppear {
+            Task {
+                await userService.fetchUsers()
+            }
         }
         .sheet(isPresented: $showingAddUser) {
             AddUserView()
+        }
+        .sheet(isPresented: $showingUserDetail) {
+            if let user = selectedUser {
+                UserDetailSheet(user: user)
+            }
         }
     }
 }
@@ -1252,10 +1279,301 @@ struct AddUserView: View {
     }
 }
 
+// MARK: - User Detail Sheet
+struct UserDetailSheet: View {
+    let user: User
+    @Environment(\.dismiss) private var dismiss
+    @State private var isEditing = false
+    @State private var editedName: String = ""
+    @State private var editedEmail: String = ""
+    @State private var editedPhone: String = ""
+    @State private var editedRole: UserRole = .fieldWorker
+    @State private var isSaving = false
+    @State private var showingDeleteConfirm = false
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: AppSpacing.lg) {
+                    // User Avatar & Basic Info
+                    VStack(spacing: AppSpacing.md) {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [user.role.color.opacity(0.3), user.role.color.opacity(0.1)]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 100, height: 100)
+
+                            Circle()
+                                .stroke(user.role.color.opacity(0.3), lineWidth: 3)
+                                .frame(width: 100, height: 100)
+
+                            Text(user.initials)
+                                .font(.system(size: 36, weight: .bold, design: .rounded))
+                                .foregroundColor(user.role.color)
+                        }
+
+                        VStack(spacing: AppSpacing.xs) {
+                            Text(user.name)
+                                .font(AppTypography.heading2)
+                                .foregroundColor(AppColors.textPrimary)
+
+                            StatusBadge(
+                                text: user.status.rawValue.capitalized,
+                                status: user.status == .active ? .active : .warning
+                            )
+                        }
+                    }
+                    .padding(.top, AppSpacing.md)
+
+                    // User Info Card
+                    SettingsSectionCard(
+                        title: "profile.userInfo".localized,
+                        icon: "person.fill",
+                        iconColor: AppColors.primary600
+                    ) {
+                        VStack(spacing: 0) {
+                            UserDetailRow(label: "profile.email".localized, value: user.email, icon: "envelope.fill")
+                            SettingsDivider()
+                            UserDetailRow(label: "profile.phone".localized, value: user.phone ?? "Not provided", icon: "phone.fill")
+                            SettingsDivider()
+                            UserDetailRow(label: "settings.role".localized, value: user.role.displayName, icon: user.role.icon, valueColor: user.role.color)
+                        }
+                    }
+
+                    // Permissions Card
+                    SettingsSectionCard(
+                        title: "settings.permissions".localized,
+                        icon: "lock.shield.fill",
+                        iconColor: AppColors.success
+                    ) {
+                        VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                            HStack {
+                                Text("settings.roleBasedPermissions".localized)
+                                    .font(AppTypography.secondary)
+                                    .foregroundColor(AppColors.textSecondary)
+                                Spacer()
+                                Text("\(user.role.defaultPermissions.count)")
+                                    .font(AppTypography.secondaryMedium)
+                                    .foregroundColor(AppColors.primary600)
+                            }
+
+                            if let templateName = user.companyTemplateName {
+                                HStack {
+                                    Text("settings.companyTemplate".localized)
+                                        .font(AppTypography.secondary)
+                                        .foregroundColor(AppColors.textSecondary)
+                                    Spacer()
+                                    Text(templateName)
+                                        .font(AppTypography.captionMedium)
+                                        .foregroundColor(AppColors.primary600)
+                                        .padding(.horizontal, AppSpacing.xs)
+                                        .padding(.vertical, 2)
+                                        .background(AppColors.primary100)
+                                        .cornerRadius(AppSpacing.radiusSmall)
+                                }
+                            }
+                        }
+                    }
+
+                    // Actions Card
+                    VStack(spacing: AppSpacing.sm) {
+                        OutlineButton("settings.editUser".localized, icon: "pencil") {
+                            editedName = user.name
+                            editedEmail = user.email
+                            editedPhone = user.phone ?? ""
+                            editedRole = user.role
+                            isEditing = true
+                        }
+
+                        if user.status == .active {
+                            OutlineButton("settings.deactivateUser".localized, icon: "person.fill.xmark") {
+                                // Deactivate user action
+                            }
+                        } else {
+                            OutlineButton("settings.activateUser".localized, icon: "person.fill.checkmark") {
+                                // Activate user action
+                            }
+                        }
+
+                        Button(action: { showingDeleteConfirm = true }) {
+                            HStack {
+                                Image(systemName: "trash")
+                                Text("settings.deleteUser".localized)
+                            }
+                            .font(AppTypography.bodyMedium)
+                            .foregroundColor(AppColors.error)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, AppSpacing.md)
+                            .background(AppColors.errorLight)
+                            .cornerRadius(AppSpacing.radiusMedium)
+                        }
+                    }
+                }
+                .padding(AppSpacing.md)
+                .padding(.bottom, AppSpacing.xl)
+            }
+            .background(AppColors.background)
+            .navigationTitle("settings.userDetails".localized)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("common.done".localized) { dismiss() }
+                }
+            }
+            .sheet(isPresented: $isEditing) {
+                EditUserSheet(
+                    user: user,
+                    name: $editedName,
+                    email: $editedEmail,
+                    phone: $editedPhone,
+                    role: $editedRole
+                )
+            }
+            .confirmationDialog(
+                "settings.deleteUserConfirm".localized,
+                isPresented: $showingDeleteConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("common.delete".localized, role: .destructive) {
+                    // Delete user
+                    dismiss()
+                }
+                Button("common.cancel".localized, role: .cancel) {}
+            } message: {
+                Text("settings.deleteUserWarning".localized)
+            }
+        }
+    }
+}
+
+// MARK: - User Detail Row
+struct UserDetailRow: View {
+    let label: String
+    let value: String
+    let icon: String
+    var valueColor: Color = AppColors.textPrimary
+
+    var body: some View {
+        HStack(spacing: AppSpacing.sm) {
+            ZStack {
+                RoundedRectangle(cornerRadius: AppSpacing.radiusSmall)
+                    .fill(AppColors.gray100)
+                    .frame(width: 32, height: 32)
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.gray500)
+            }
+
+            Text(label)
+                .font(AppTypography.secondary)
+                .foregroundColor(AppColors.textSecondary)
+
+            Spacer()
+
+            Text(value)
+                .font(AppTypography.bodyMedium)
+                .foregroundColor(valueColor)
+        }
+        .padding(.vertical, AppSpacing.sm)
+    }
+}
+
+// MARK: - Edit User Sheet
+struct EditUserSheet: View {
+    let user: User
+    @Binding var name: String
+    @Binding var email: String
+    @Binding var phone: String
+    @Binding var role: UserRole
+    @Environment(\.dismiss) private var dismiss
+    @State private var isSaving = false
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: AppSpacing.lg) {
+                    AppTextField(
+                        label: "settings.fullName".localized,
+                        placeholder: "settings.fullNamePlaceholder".localized,
+                        text: $name,
+                        icon: "person",
+                        isRequired: true
+                    )
+
+                    AppTextField(
+                        label: "auth.email".localized,
+                        placeholder: "settings.emailPlaceholder".localized,
+                        text: $email,
+                        icon: "envelope",
+                        isRequired: true
+                    )
+
+                    AppTextField(
+                        label: "profile.phone".localized,
+                        placeholder: "settings.phonePlaceholder".localized,
+                        text: $phone,
+                        icon: "phone"
+                    )
+
+                    // Role Selection
+                    VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                        Text("settings.role".localized)
+                            .font(AppTypography.label)
+                            .foregroundColor(AppColors.textPrimary)
+
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: AppSpacing.sm) {
+                            ForEach(UserRole.allCases, id: \.self) { r in
+                                TapCard(isSelected: role == r, action: { role = r }) {
+                                    HStack(spacing: AppSpacing.xs) {
+                                        Image(systemName: r.icon)
+                                            .font(.system(size: 16))
+                                            .foregroundColor(r.color)
+                                        Text(r.displayName)
+                                            .font(AppTypography.secondaryMedium)
+                                            .foregroundColor(AppColors.textPrimary)
+                                            .lineLimit(1)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    PrimaryButton(isSaving ? "common.saving".localized : "common.save".localized, icon: "checkmark") {
+                        Task {
+                            isSaving = true
+                            // Save changes
+                            try? await Task.sleep(nanoseconds: 500_000_000)
+                            isSaving = false
+                            dismiss()
+                        }
+                    }
+                    .disabled(name.isEmpty || email.isEmpty)
+                }
+                .padding(AppSpacing.md)
+            }
+            .background(AppColors.background)
+            .navigationTitle("settings.editUser".localized)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("common.cancel".localized) { dismiss() }
+                }
+            }
+        }
+    }
+}
+
 // MARK: - Permissions Tab
 struct PermissionsTab: View {
     @State private var selectedRole: UserRole = .fieldWorker
     @State private var showingFullPermissions = false
+    @State private var showingRoleDetails = false
+    @State private var selectedRoleForDetails: UserRole?
 
     var body: some View {
         ScrollView {
@@ -1298,43 +1616,49 @@ struct PermissionsTab: View {
                 ) {
                     VStack(spacing: 0) {
                         ForEach(Array(UserRole.allCases.sorted { $0.hierarchyLevel > $1.hierarchyLevel }.enumerated()), id: \.element) { index, role in
-                            HStack(spacing: AppSpacing.sm) {
-                                // Level badge
-                                ZStack {
-                                    Circle()
-                                        .fill(role.color)
-                                        .frame(width: 28, height: 28)
-                                    Text("\(role.hierarchyLevel)")
-                                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                                        .foregroundColor(.white)
+                            Button(action: {
+                                selectedRoleForDetails = role
+                                showingRoleDetails = true
+                            }) {
+                                HStack(spacing: AppSpacing.sm) {
+                                    // Level badge
+                                    ZStack {
+                                        Circle()
+                                            .fill(role.color)
+                                            .frame(width: 28, height: 28)
+                                        Text("\(role.hierarchyLevel)")
+                                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                                            .foregroundColor(.white)
+                                    }
+
+                                    // Icon
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: AppSpacing.radiusSmall)
+                                            .fill(role.color.opacity(0.12))
+                                            .frame(width: 36, height: 36)
+                                        Image(systemName: role.icon)
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(role.color)
+                                    }
+
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(role.displayName)
+                                            .font(AppTypography.bodyMedium)
+                                            .foregroundColor(AppColors.textPrimary)
+                                        Text(String(format: "settings.permissionsCount".localized, role.defaultPermissions.count))
+                                            .font(AppTypography.caption)
+                                            .foregroundColor(AppColors.textTertiary)
+                                    }
+
+                                    Spacer()
+
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(AppColors.gray400)
                                 }
-
-                                // Icon
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: AppSpacing.radiusSmall)
-                                        .fill(role.color.opacity(0.12))
-                                        .frame(width: 36, height: 36)
-                                    Image(systemName: role.icon)
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(role.color)
-                                }
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(role.displayName)
-                                        .font(AppTypography.bodyMedium)
-                                        .foregroundColor(AppColors.textPrimary)
-                                    Text(String(format: "settings.permissionsCount".localized, role.defaultPermissions.count))
-                                        .font(AppTypography.caption)
-                                        .foregroundColor(AppColors.textTertiary)
-                                }
-
-                                Spacer()
-
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(AppColors.gray400)
+                                .padding(.vertical, AppSpacing.sm)
                             }
-                            .padding(.vertical, AppSpacing.sm)
+                            .buttonStyle(PlainButtonStyle())
 
                             if index < UserRole.allCases.count - 1 {
                                 SettingsDivider()
@@ -1384,6 +1708,11 @@ struct PermissionsTab: View {
         .fullScreenCover(isPresented: $showingFullPermissions) {
             PermissionsView()
         }
+        .sheet(isPresented: $showingRoleDetails) {
+            if let role = selectedRoleForDetails {
+                RoleDetailSheet(role: role)
+            }
+        }
     }
 
     private func permissionLevelRow(color: Color, icon: String, label: String, description: String) -> some View {
@@ -1407,6 +1736,108 @@ struct PermissionsTab: View {
             }
 
             Spacer()
+        }
+    }
+}
+
+// MARK: - Role Detail Sheet
+struct RoleDetailSheet: View {
+    let role: UserRole
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: AppSpacing.lg) {
+                    // Role Header
+                    VStack(spacing: AppSpacing.md) {
+                        ZStack {
+                            Circle()
+                                .fill(role.color.opacity(0.2))
+                                .frame(width: 80, height: 80)
+                            Image(systemName: role.icon)
+                                .font(.system(size: 32, weight: .semibold))
+                                .foregroundColor(role.color)
+                        }
+
+                        VStack(spacing: AppSpacing.xs) {
+                            Text(role.displayName)
+                                .font(AppTypography.heading2)
+                                .foregroundColor(AppColors.textPrimary)
+
+                            HStack(spacing: AppSpacing.xs) {
+                                Text("settings.hierarchyLevel".localized)
+                                    .font(AppTypography.secondary)
+                                    .foregroundColor(AppColors.textSecondary)
+                                Text("\(role.hierarchyLevel)")
+                                    .font(AppTypography.secondaryMedium)
+                                    .foregroundColor(role.color)
+                            }
+                        }
+                    }
+                    .padding(.vertical, AppSpacing.md)
+
+                    // Role Description
+                    AppCard {
+                        VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                            HStack(spacing: AppSpacing.xs) {
+                                Image(systemName: "info.circle.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(AppColors.info)
+                                Text("settings.roleDescription".localized)
+                                    .font(AppTypography.label)
+                                    .foregroundColor(AppColors.textPrimary)
+                            }
+                            Text(role.description)
+                                .font(AppTypography.secondary)
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                    }
+
+                    // Daily Log Visibility
+                    SettingsSectionCard(
+                        title: "settings.dailyLogVisibility".localized,
+                        icon: "eye.fill",
+                        iconColor: AppColors.primary600
+                    ) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: AppSpacing.xxs) {
+                                Text(role.defaultDailyLogVisibility.displayName)
+                                    .font(AppTypography.bodyMedium)
+                                    .foregroundColor(AppColors.textPrimary)
+                                Text(role.defaultDailyLogVisibility.description)
+                                    .font(AppTypography.caption)
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                            Spacer()
+                        }
+                    }
+
+                    // Permissions by Category
+                    VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                        Text("settings.defaultPermissions".localized)
+                            .font(AppTypography.heading3)
+                            .foregroundColor(AppColors.textPrimary)
+
+                        ForEach(PermissionCategory.allCases, id: \.self) { category in
+                            PermissionCategoryCard(
+                                category: category,
+                                enabledPermissions: role.defaultPermissions
+                            )
+                        }
+                    }
+                }
+                .padding(AppSpacing.md)
+                .padding(.bottom, AppSpacing.xl)
+            }
+            .background(AppColors.background)
+            .navigationTitle("settings.roleDetails".localized)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("common.done".localized) { dismiss() }
+                }
+            }
         }
     }
 }

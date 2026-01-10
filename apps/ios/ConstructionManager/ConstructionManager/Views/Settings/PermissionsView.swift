@@ -84,19 +84,38 @@ struct PermissionTabButton: View {
 struct ProjectTemplatesTab: View {
     @StateObject private var adminService = AdminService.shared
     @State private var selectedTemplate: PermissionTemplate?
+    @State private var showingCreateTemplate = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AppSpacing.lg) {
-                // Description
-                VStack(alignment: .leading, spacing: AppSpacing.xs) {
-                    Text("Project Templates")
-                        .font(AppTypography.heading3)
-                        .foregroundColor(AppColors.textPrimary)
+                // Header with Add Button
+                HStack {
+                    VStack(alignment: .leading, spacing: AppSpacing.xs) {
+                        Text("Project Templates")
+                            .font(AppTypography.heading3)
+                            .foregroundColor(AppColors.textPrimary)
 
-                    Text("Define what users can do within specific projects")
-                        .font(AppTypography.secondary)
-                        .foregroundColor(AppColors.textSecondary)
+                        Text("Define what users can do within specific projects")
+                            .font(AppTypography.secondary)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+
+                    Spacer()
+
+                    Button(action: { showingCreateTemplate = true }) {
+                        HStack(spacing: AppSpacing.xs) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("Add")
+                                .font(AppTypography.secondaryMedium)
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, AppSpacing.md)
+                        .padding(.vertical, AppSpacing.sm)
+                        .background(AppColors.primary600)
+                        .cornerRadius(AppSpacing.radiusFull)
+                    }
                 }
 
                 // Templates List
@@ -143,6 +162,9 @@ struct ProjectTemplatesTab: View {
         .sheet(item: $selectedTemplate) { template in
             PermissionTemplateDetailView(template: template)
         }
+        .sheet(isPresented: $showingCreateTemplate) {
+            CreateTemplateSheet(isCompanyScope: false)
+        }
     }
 }
 
@@ -150,19 +172,38 @@ struct ProjectTemplatesTab: View {
 struct CompanyTemplatesTab: View {
     @StateObject private var adminService = AdminService.shared
     @State private var selectedTemplate: PermissionTemplate?
+    @State private var showingCreateTemplate = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AppSpacing.lg) {
-                // Description
-                VStack(alignment: .leading, spacing: AppSpacing.xs) {
-                    Text("Company Templates")
-                        .font(AppTypography.heading3)
-                        .foregroundColor(AppColors.textPrimary)
+                // Header with Add Button
+                HStack {
+                    VStack(alignment: .leading, spacing: AppSpacing.xs) {
+                        Text("Company Templates")
+                            .font(AppTypography.heading3)
+                            .foregroundColor(AppColors.textPrimary)
 
-                    Text("Define what users can do at the company level")
-                        .font(AppTypography.secondary)
-                        .foregroundColor(AppColors.textSecondary)
+                        Text("Define what users can do at the company level")
+                            .font(AppTypography.secondary)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+
+                    Spacer()
+
+                    Button(action: { showingCreateTemplate = true }) {
+                        HStack(spacing: AppSpacing.xs) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("Add")
+                                .font(AppTypography.secondaryMedium)
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, AppSpacing.md)
+                        .padding(.vertical, AppSpacing.sm)
+                        .background(AppColors.purple)
+                        .cornerRadius(AppSpacing.radiusFull)
+                    }
                 }
 
                 // Templates List
@@ -208,6 +249,208 @@ struct CompanyTemplatesTab: View {
         }
         .sheet(item: $selectedTemplate) { template in
             PermissionTemplateDetailView(template: template)
+        }
+        .sheet(isPresented: $showingCreateTemplate) {
+            CreateTemplateSheet(isCompanyScope: true)
+        }
+    }
+}
+
+// MARK: - Create Template Sheet
+struct CreateTemplateSheet: View {
+    let isCompanyScope: Bool
+    @Environment(\.dismiss) private var dismiss
+    @State private var templateName = ""
+    @State private var templateDescription = ""
+    @State private var selectedAccessLevels: [String: AccessLevel] = [:]
+    @State private var isSaving = false
+    @State private var errorMessage: String?
+
+    // Project tools
+    let projectTools = ["daily_logs", "time_tracking", "equipment", "documents", "photos", "schedule", "punch_lists", "safety", "drone_flights", "rfis", "materials"]
+
+    // Company tools
+    let companyTools = ["directory", "financials", "reports", "label_library", "settings", "user_management"]
+
+    var tools: [String] {
+        isCompanyScope ? companyTools : projectTools
+    }
+
+    var themeColor: Color {
+        isCompanyScope ? AppColors.purple : AppColors.primary600
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: AppSpacing.lg) {
+                    // Template Info
+                    VStack(alignment: .leading, spacing: AppSpacing.md) {
+                        AppTextField(
+                            label: "Template Name",
+                            placeholder: "Enter template name",
+                            text: $templateName,
+                            icon: "tag",
+                            isRequired: true
+                        )
+
+                        VStack(alignment: .leading, spacing: AppSpacing.xs) {
+                            Text("Description")
+                                .font(AppTypography.label)
+                                .foregroundColor(AppColors.textPrimary)
+
+                            TextEditor(text: $templateDescription)
+                                .font(AppTypography.body)
+                                .frame(minHeight: 80)
+                                .padding(AppSpacing.sm)
+                                .background(AppColors.cardBackground)
+                                .cornerRadius(AppSpacing.radiusMedium)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: AppSpacing.radiusMedium)
+                                        .stroke(AppColors.gray200, lineWidth: 1)
+                                )
+                        }
+                    }
+
+                    // Tool Access Levels
+                    VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                        Text("Tool Access Levels")
+                            .font(AppTypography.heading3)
+                            .foregroundColor(AppColors.textPrimary)
+
+                        Text("Set the default access level for each tool")
+                            .font(AppTypography.secondary)
+                            .foregroundColor(AppColors.textSecondary)
+
+                        ForEach(tools, id: \.self) { tool in
+                            EditableToolAccessRow(
+                                tool: tool,
+                                selectedLevel: Binding(
+                                    get: { selectedAccessLevels[tool] ?? .standard },
+                                    set: { selectedAccessLevels[tool] = $0 }
+                                ),
+                                themeColor: themeColor
+                            )
+                        }
+                    }
+
+                    if let error = errorMessage {
+                        Text(error)
+                            .font(AppTypography.secondary)
+                            .foregroundColor(AppColors.error)
+                            .padding(AppSpacing.sm)
+                            .frame(maxWidth: .infinity)
+                            .background(AppColors.errorLight)
+                            .cornerRadius(AppSpacing.radiusMedium)
+                    }
+
+                    // Save Button
+                    PrimaryButton(isSaving ? "Creating..." : "Create Template", icon: "checkmark") {
+                        Task {
+                            await createTemplate()
+                        }
+                    }
+                    .disabled(templateName.isEmpty || isSaving)
+                }
+                .padding(AppSpacing.md)
+                .padding(.bottom, AppSpacing.xl)
+            }
+            .background(AppColors.background)
+            .navigationTitle(isCompanyScope ? "New Company Template" : "New Project Template")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+        }
+        .onAppear {
+            // Initialize with default access levels
+            for tool in tools {
+                selectedAccessLevels[tool] = .standard
+            }
+        }
+    }
+
+    private func createTemplate() async {
+        isSaving = true
+        errorMessage = nil
+
+        do {
+            // Build permissions object
+            var permissions: [String: String] = [:]
+            for (tool, level) in selectedAccessLevels {
+                permissions[tool] = level.rawValue
+            }
+
+            let body: [String: Any] = [
+                "name": templateName,
+                "description": templateDescription,
+                "scope": isCompanyScope ? "company" : "project",
+                "permissions": permissions
+            ]
+
+            try await APIClient.shared.post("/permissions/templates", body: body)
+
+            // Refresh templates
+            await AdminService.shared.fetchPermissionTemplates()
+            dismiss()
+        } catch {
+            errorMessage = "Failed to create template: \(error.localizedDescription)"
+        }
+
+        isSaving = false
+    }
+}
+
+// MARK: - Editable Tool Access Row
+struct EditableToolAccessRow: View {
+    let tool: String
+    @Binding var selectedLevel: AccessLevel
+    let themeColor: Color
+
+    var toolDisplayName: String {
+        tool.replacingOccurrences(of: "_", with: " ").capitalized
+    }
+
+    var body: some View {
+        AppCard {
+            VStack(spacing: AppSpacing.sm) {
+                HStack {
+                    Text(toolDisplayName)
+                        .font(AppTypography.bodyMedium)
+                        .foregroundColor(AppColors.textPrimary)
+
+                    Spacer()
+                }
+
+                // Access Level Buttons
+                HStack(spacing: AppSpacing.xs) {
+                    ForEach(AccessLevel.allCases, id: \.self) { level in
+                        Button(action: { selectedLevel = level }) {
+                            Text(level.displayName)
+                                .font(AppTypography.captionMedium)
+                                .foregroundColor(selectedLevel == level ? .white : level.color)
+                                .padding(.horizontal, AppSpacing.sm)
+                                .padding(.vertical, AppSpacing.xs)
+                                .background(selectedLevel == level ? level.color : level.color.opacity(0.1))
+                                .cornerRadius(AppSpacing.radiusSmall)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - AccessLevel Extension
+extension AccessLevel {
+    var color: Color {
+        switch self {
+        case .none: return AppColors.gray400
+        case .readOnly: return AppColors.info
+        case .standard: return AppColors.success
+        case .admin: return AppColors.purple
         }
     }
 }
