@@ -506,7 +506,7 @@ struct UserCompanyPermission: Codable, Identifiable {
 }
 
 /// User's full permissions including project assignments
-struct UserPermissions: Codable {
+struct UserPermissions: Decodable {
     let userId: String
     let companyTemplate: PermissionTemplate?
     let projectAssignments: [ProjectPermissionAssignment]
