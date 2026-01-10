@@ -383,12 +383,12 @@ struct CreateTemplateSheet: View {
                 permissions[tool] = level.rawValue
             }
 
-            let body: [String: Any] = [
-                "name": templateName,
-                "description": templateDescription,
-                "scope": isCompanyScope ? "company" : "project",
-                "permissions": permissions
-            ]
+            let body = CreateTemplateRequest(
+                name: templateName,
+                description: templateDescription.isEmpty ? nil : templateDescription,
+                scope: isCompanyScope ? "company" : "project",
+                permissions: permissions
+            )
 
             try await APIClient.shared.post("/permissions/templates", body: body)
 
@@ -401,6 +401,14 @@ struct CreateTemplateSheet: View {
 
         isSaving = false
     }
+}
+
+// MARK: - Create Template Request
+struct CreateTemplateRequest: Encodable {
+    let name: String
+    let description: String?
+    let scope: String
+    let permissions: [String: String]
 }
 
 // MARK: - Editable Tool Access Row
