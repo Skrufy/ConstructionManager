@@ -115,7 +115,12 @@ struct DocumentsView: View {
                 DocumentUploadView()
             }
             .sheet(item: $selectedDocument) { document in
-                DocumentDetailView(document: document)
+                let index = viewModel.documents.firstIndex(where: { $0.id == document.id }) ?? 0
+                DocumentDetailView(
+                    document: document,
+                    allDocuments: viewModel.documents,
+                    currentIndex: index
+                )
             }
             .task {
                 await viewModel.fetchDocuments()
@@ -729,6 +734,8 @@ struct BlasterSelectionRow: View {
 struct DocumentDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let document: Document
+    let allDocuments: [Document]
+    let currentIndex: Int
     @State private var isLoading = false
     @State private var showError = false
     @State private var errorMessage = ""
@@ -847,7 +854,11 @@ struct DocumentDetailView: View {
                 Text(errorMessage)
             }
             .fullScreenCover(isPresented: $showingDocumentViewer) {
-                DocumentViewerView(document: document)
+                DocumentViewerView(
+                    document: document,
+                    allDocuments: allDocuments,
+                    currentIndex: currentIndex
+                )
             }
         }
     }

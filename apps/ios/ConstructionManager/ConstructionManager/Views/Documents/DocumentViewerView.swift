@@ -8,9 +8,11 @@
 import SwiftUI
 import UIKit
 
-/// Full-screen modal document viewer
+/// Full-screen modal document viewer with prev/next navigation
 struct DocumentViewerView: View {
-    let document: Document
+    @State private var currentDocument: Document
+    let allDocuments: [Document]
+    @State private var currentIndex: Int
     @Environment(\.dismiss) private var dismiss
 
     @State private var signedURL: URL?
@@ -19,6 +21,24 @@ struct DocumentViewerView: View {
     @State private var showingShareSheet = false
 
     private let cacheManager = DocumentCacheManager.shared
+
+    // Navigation helpers
+    private var hasPrevious: Bool { currentIndex > 0 }
+    private var hasNext: Bool { currentIndex < allDocuments.count - 1 }
+
+    /// Initialize with a single document (no navigation)
+    init(document: Document) {
+        self._currentDocument = State(initialValue: document)
+        self.allDocuments = [document]
+        self._currentIndex = State(initialValue: 0)
+    }
+
+    /// Initialize with all documents for prev/next navigation
+    init(document: Document, allDocuments: [Document], currentIndex: Int) {
+        self._currentDocument = State(initialValue: document)
+        self.allDocuments = allDocuments
+        self._currentIndex = State(initialValue: currentIndex)
+    }
 
     var body: some View {
         ZStack {
@@ -37,12 +57,13 @@ struct DocumentViewerView: View {
                     errorView(error)
                 } else if let url = signedURL {
                     contentView(url: url)
+                        .id(currentDocument.id) // Force view refresh when document changes
                 } else {
                     errorView("Unable to load document")
                 }
             }
         }
-        .task {
+        .task(id: currentDocument.id) {
             await loadDocument()
         }
         .sheet(isPresented: $showingShareSheet) {
@@ -55,63 +76,100 @@ struct DocumentViewerView: View {
     // MARK: - Header
 
     private var headerView: some View {
-        HStack(spacing: AppSpacing.md) {
-            // File icon
-            Image(systemName: fileType.iconName)
-                .font(.system(size: 20))
-                .foregroundColor(fileType.iconColor)
-                .frame(width: 36, height: 36)
-                .background(Color.white.opacity(0.1))
-                .cornerRadius(8)
+        HStack(spacing: AppSpacing.sm) {
+            // Close button
+            Button(action: { dismiss() }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 36, height: 36)
+                    .background(Color.white.opacity(0.1))
+                    .cornerRadius(8)
+            }
 
-            // File info
-            VStack(alignment: .leading, spacing: 2) {
-                Text(document.name)
+            // Previous button (only show if multiple documents)
+            if allDocuments.count > 1 {
+                Button(action: { navigateToPrevious() }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(hasPrevious ? .white : .white.opacity(0.3))
+                        .frame(width: 36, height: 36)
+                        .background(Color.white.opacity(0.1))
+                        .cornerRadius(8)
+                }
+                .disabled(!hasPrevious)
+            }
+
+            // File info (centered)
+            VStack(spacing: 2) {
+                Text(currentDocument.name)
                     .font(AppTypography.bodyMedium)
                     .foregroundColor(.white)
                     .lineLimit(1)
 
-                HStack(spacing: AppSpacing.sm) {
+                HStack(spacing: AppSpacing.xs) {
                     Text(fileType.label)
                         .font(AppTypography.caption)
                         .foregroundColor(.white.opacity(0.6))
 
-                    if let size = document.fileSize, size > 0 {
+                    if allDocuments.count > 1 {
                         Text("•")
                             .foregroundColor(.white.opacity(0.4))
-                        Text(formattedFileSize(size))
+                        Text("\(currentIndex + 1) of \(allDocuments.count)")
                             .font(AppTypography.caption)
                             .foregroundColor(.white.opacity(0.6))
                     }
                 }
             }
+            .frame(maxWidth: .infinity)
 
-            Spacer()
+            // Next button (only show if multiple documents)
+            if allDocuments.count > 1 {
+                Button(action: { navigateToNext() }) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(hasNext ? .white : .white.opacity(0.3))
+                        .frame(width: 36, height: 36)
+                        .background(Color.white.opacity(0.1))
+                        .cornerRadius(8)
+                }
+                .disabled(!hasNext)
+            }
 
             // Share button
             Button(action: { showingShareSheet = true }) {
                 Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 36, height: 36)
                     .background(Color.white.opacity(0.1))
                     .cornerRadius(8)
             }
             .disabled(signedURL == nil)
-
-            // Close button
-            Button(action: { dismiss() }) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
-                    .background(Color.white.opacity(0.1))
-                    .cornerRadius(8)
-            }
         }
         .padding(.horizontal, AppSpacing.md)
         .padding(.vertical, AppSpacing.sm)
         .background(Color.black.opacity(0.8))
+    }
+
+    // MARK: - Navigation
+
+    private func navigateToPrevious() {
+        guard hasPrevious else { return }
+        currentIndex -= 1
+        currentDocument = allDocuments[currentIndex]
+        signedURL = nil
+        loadError = nil
+        isLoading = true
+    }
+
+    private func navigateToNext() {
+        guard hasNext else { return }
+        currentIndex += 1
+        currentDocument = allDocuments[currentIndex]
+        signedURL = nil
+        loadError = nil
+        isLoading = true
     }
 
     // MARK: - Content Views
@@ -167,14 +225,14 @@ struct DocumentViewerView: View {
             VideoDocumentPlayer(url: url)
 
         case .unsupported:
-            UnsupportedFileView(document: document, signedURL: url)
+            UnsupportedFileView(document: currentDocument, signedURL: url)
         }
     }
 
     // MARK: - Helpers
 
     private var fileType: ViewableFileType {
-        FileTypeDetector.detect(from: document.name)
+        FileTypeDetector.detect(from: currentDocument.name)
     }
 
     private func formattedFileSize(_ bytes: Int64) -> String {
@@ -190,7 +248,7 @@ struct DocumentViewerView: View {
 
         do {
             // Get signed URL from cache manager
-            let url = try await cacheManager.getSignedURL(for: document.id)
+            let url = try await cacheManager.getSignedURL(for: currentDocument.id)
             await MainActor.run {
                 self.signedURL = url
             }
