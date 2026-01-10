@@ -381,7 +381,7 @@ enum AccessLevel: String, Codable, CaseIterable {
 }
 
 /// Permission template for Procore-style access control
-struct PermissionTemplate: Identifiable, Codable {
+struct PermissionTemplate: Identifiable, Decodable {
     let id: String
     let name: String
     let description: String?
