@@ -68,6 +68,7 @@ struct SearchView: View {
                     .font(AppTypography.body)
                     .foregroundColor(AppColors.textPrimary)
                     .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
                     .focused($isSearchFocused)
                 if !searchText.isEmpty {
                     Button(action: {
@@ -86,6 +87,10 @@ struct SearchView: View {
                 RoundedRectangle(cornerRadius: AppSpacing.radiusMedium)
                     .stroke(AppColors.gray200, lineWidth: 1)
             )
+            .contentShape(Rectangle())
+            .onTapGesture {
+                isSearchFocused = true
+            }
 
             // Filter indicator
             if let filterLabel = searchService.activeFilterLabel {

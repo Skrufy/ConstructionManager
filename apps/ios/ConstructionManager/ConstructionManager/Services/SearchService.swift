@@ -94,6 +94,7 @@ let SEARCH_FILTERS: [SearchFilterDefinition] = [
     SearchFilterDefinition("projects", "Projects"),
     SearchFilterDefinition("logs", "Daily Logs", aliases: ["dailylogs", "dailylog"]),
     SearchFilterDefinition("documents", "Documents", aliases: ["docs"]),
+    SearchFilterDefinition("drawings", "Drawings", aliases: ["drawing"]),
     SearchFilterDefinition("clients", "Clients"),
     SearchFilterDefinition("warnings", "Warnings"),
     SearchFilterDefinition("users", "Users"),

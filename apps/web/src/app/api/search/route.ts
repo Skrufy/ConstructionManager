@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 
 // Valid search categories for filtering (dailylogs is normalized to 'logs')
-const VALID_CATEGORIES = ['projects', 'logs', 'users', 'equipment', 'documents', 'safety', 'subcontractors'] as const
+const VALID_CATEGORIES = ['projects', 'logs', 'users', 'equipment', 'documents', 'drawings', 'safety', 'subcontractors'] as const
 type SearchCategory = typeof VALID_CATEGORIES[number]
 
 export async function GET(request: NextRequest) {
@@ -52,6 +52,8 @@ export async function GET(request: NextRequest) {
         'equipment': 'equipment',
         'document': 'documents',
         'documents': 'documents',
+        'drawing': 'drawings',
+        'drawings': 'drawings',
         'safety': 'safety',
         'subcontractor': 'subcontractors',
         'subcontractors': 'subcontractors',
@@ -74,6 +76,7 @@ export async function GET(request: NextRequest) {
     const searchUsers = !category || category === 'users'
     const searchEquipment = !category || category === 'equipment'
     const searchDocuments = !category || category === 'documents'
+    const searchDrawings = !category || category === 'drawings'
     const searchSafety = !category || category === 'safety'
     const searchSubcontractors = !category || category === 'subcontractors'
 
@@ -236,6 +239,39 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Search drawings (files with category = DRAWINGS)
+    let drawings: Array<{ id: string; name: string; category: string | null; project: { name: string } | null }> = []
+    if (searchDrawings) {
+      const drawingWhere: Record<string, unknown> = {
+        category: 'DRAWINGS',
+        ...(isWildcard ? {} : {
+          OR: [
+            { name: { contains: query, mode: 'insensitive' } },
+            { description: { contains: query, mode: 'insensitive' } },
+          ],
+        }),
+      }
+
+      // Filter by specific project if provided
+      if (projectId) {
+        drawingWhere.projectId = projectId
+      }
+
+      drawings = await prisma.file.findMany({
+        where: drawingWhere,
+        select: {
+          id: true,
+          name: true,
+          category: true,
+          project: {
+            select: { name: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: resultLimit,
+      })
+    }
+
     // Search safety incidents
     let safetyItems: Array<{ id: string; incidentType: string; status: string; project: { name: string } | null }> = []
     if (searchSafety) {
@@ -347,6 +383,19 @@ export async function GET(request: NextRequest) {
         id: d.id,
         title: d.name,
         subtitle: d.project?.name || d.category || 'Document',
+        description: null,
+        project_id: null,
+        project_name: d.project?.name || null,
+        matched_field: 'name',
+        matched_text: null,
+        created_at: null,
+        updated_at: null,
+      })),
+      ...drawings.map((d) => ({
+        type: 'DRAWING',
+        id: d.id,
+        title: d.name,
+        subtitle: d.project?.name || 'Drawing',
         description: null,
         project_id: null,
         project_name: d.project?.name || null,
