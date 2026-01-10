@@ -48,6 +48,8 @@ sealed class Route(val route: String) {
             const val ARG_DOCUMENT_ID = "documentId"
         }
     }
+    // DocumentViewer is the same route as DocumentDetail but uses view-only viewer
+    data class DocumentViewer(val documentId: String) : Route("document/$documentId")
 
     // Drawings
     object Drawings : Route("drawings")

@@ -124,6 +124,10 @@ dependencies {
 
   // Coil for image loading
   implementation("io.coil-kt:coil-compose:2.5.0")
+
+  // ExoPlayer for video playback
+  implementation("androidx.media3:media3-exoplayer:1.2.0")
+  implementation("androidx.media3:media3-ui:1.2.0")
 }
 
 // Apollo GraphQL Configuration

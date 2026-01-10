@@ -37,6 +37,7 @@ import com.constructionpro.app.ui.screens.DailyLogEditScreen
 import com.constructionpro.app.ui.screens.DailyLogsScreen
 import com.constructionpro.app.ui.screens.DocumentDetailScreen
 import com.constructionpro.app.ui.screens.DocumentsScreen
+import com.constructionpro.app.ui.screens.DocumentViewerScreen
 import com.constructionpro.app.ui.screens.DrawingsScreen
 import com.constructionpro.app.ui.screens.DrawingViewerScreen
 import com.constructionpro.app.ui.screens.EquipmentDetailScreen
@@ -253,7 +254,7 @@ private fun AppNav(
         composable("document/{documentId}") { backStackEntry ->
             val documentId = backStackEntry.arguments?.getString("documentId")
             if (documentId != null) {
-                DocumentDetailScreen(
+                DocumentViewerScreen(
                     apiService = apiService,
                     documentId = documentId,
                     onBack = { navController.popBackStack() }
