@@ -1332,28 +1332,28 @@ struct UserDetailSheet: View {
 
                     // User Info Card
                     SettingsSectionCard(
-                        title: "profile.userInfo".localized,
+                        title: "User Info",
                         icon: "person.fill",
                         iconColor: AppColors.primary600
                     ) {
                         VStack(spacing: 0) {
-                            UserDetailRow(label: "profile.email".localized, value: user.email, icon: "envelope.fill")
+                            UserDetailRow(label: "Email", value: user.email, icon: "envelope.fill")
                             SettingsDivider()
-                            UserDetailRow(label: "profile.phone".localized, value: user.phone ?? "Not provided", icon: "phone.fill")
+                            UserDetailRow(label: "Phone", value: user.phone ?? "Not provided", icon: "phone.fill")
                             SettingsDivider()
-                            UserDetailRow(label: "settings.role".localized, value: user.role.displayName, icon: user.role.icon, valueColor: user.role.color)
+                            UserDetailRow(label: "Role", value: user.role.displayName, icon: user.role.icon, valueColor: user.role.color)
                         }
                     }
 
                     // Permissions Card
                     SettingsSectionCard(
-                        title: "settings.permissions".localized,
+                        title: "Permissions",
                         icon: "lock.shield.fill",
                         iconColor: AppColors.success
                     ) {
                         VStack(alignment: .leading, spacing: AppSpacing.sm) {
                             HStack {
-                                Text("settings.roleBasedPermissions".localized)
+                                Text("Role-Based Permissions")
                                     .font(AppTypography.secondary)
                                     .foregroundColor(AppColors.textSecondary)
                                 Spacer()
@@ -1364,7 +1364,7 @@ struct UserDetailSheet: View {
 
                             if let templateName = user.companyTemplateName {
                                 HStack {
-                                    Text("settings.companyTemplate".localized)
+                                    Text("Company Template")
                                         .font(AppTypography.secondary)
                                         .foregroundColor(AppColors.textSecondary)
                                     Spacer()
@@ -1382,7 +1382,7 @@ struct UserDetailSheet: View {
 
                     // Actions Card
                     VStack(spacing: AppSpacing.sm) {
-                        OutlineButton("settings.editUser".localized, icon: "pencil") {
+                        OutlineButton("Edit User", icon: "pencil") {
                             editedName = user.name
                             editedEmail = user.email
                             editedPhone = user.phone ?? ""
@@ -1391,11 +1391,11 @@ struct UserDetailSheet: View {
                         }
 
                         if user.status == .active {
-                            OutlineButton("settings.deactivateUser".localized, icon: "person.fill.xmark") {
+                            OutlineButton("Deactivate User", icon: "person.fill.xmark") {
                                 // Deactivate user action
                             }
                         } else {
-                            OutlineButton("settings.activateUser".localized, icon: "person.fill.checkmark") {
+                            OutlineButton("Activate User", icon: "person.fill.checkmark") {
                                 // Activate user action
                             }
                         }
@@ -1403,7 +1403,7 @@ struct UserDetailSheet: View {
                         Button(action: { showingDeleteConfirm = true }) {
                             HStack {
                                 Image(systemName: "trash")
-                                Text("settings.deleteUser".localized)
+                                Text("Delete User")
                             }
                             .font(AppTypography.bodyMedium)
                             .foregroundColor(AppColors.error)
@@ -1418,11 +1418,11 @@ struct UserDetailSheet: View {
                 .padding(.bottom, AppSpacing.xl)
             }
             .background(AppColors.background)
-            .navigationTitle("settings.userDetails".localized)
+            .navigationTitle("User Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("common.done".localized) { dismiss() }
+                    Button("Done") { dismiss() }
                 }
             }
             .sheet(isPresented: $isEditing) {
@@ -1435,17 +1435,17 @@ struct UserDetailSheet: View {
                 )
             }
             .confirmationDialog(
-                "settings.deleteUserConfirm".localized,
+                "Delete this user?",
                 isPresented: $showingDeleteConfirm,
                 titleVisibility: .visible
             ) {
-                Button("common.delete".localized, role: .destructive) {
+                Button("Delete", role: .destructive) {
                     // Delete user
                     dismiss()
                 }
-                Button("common.cancel".localized, role: .cancel) {}
+                Button("Cancel", role: .cancel) {}
             } message: {
-                Text("settings.deleteUserWarning".localized)
+                Text("This action cannot be undone.")
             }
         }
     }
@@ -1498,52 +1498,46 @@ struct EditUserSheet: View {
             ScrollView {
                 VStack(spacing: AppSpacing.lg) {
                     AppTextField(
-                        label: "settings.fullName".localized,
-                        placeholder: "settings.fullNamePlaceholder".localized,
+                        label: "Full Name",
+                        placeholder: "Enter full name",
                         text: $name,
                         icon: "person",
                         isRequired: true
                     )
 
                     AppTextField(
-                        label: "auth.email".localized,
-                        placeholder: "settings.emailPlaceholder".localized,
+                        label: "Email",
+                        placeholder: "Enter email address",
                         text: $email,
                         icon: "envelope",
                         isRequired: true
                     )
 
                     AppTextField(
-                        label: "profile.phone".localized,
-                        placeholder: "settings.phonePlaceholder".localized,
+                        label: "Phone",
+                        placeholder: "Enter phone number",
                         text: $phone,
                         icon: "phone"
                     )
 
                     // Role Selection
                     VStack(alignment: .leading, spacing: AppSpacing.sm) {
-                        Text("settings.role".localized)
+                        Text("Role")
                             .font(AppTypography.label)
                             .foregroundColor(AppColors.textPrimary)
 
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: AppSpacing.sm) {
                             ForEach(UserRole.allCases, id: \.self) { r in
-                                TapCard(isSelected: role == r, action: { role = r }) {
-                                    HStack(spacing: AppSpacing.xs) {
-                                        Image(systemName: r.icon)
-                                            .font(.system(size: 16))
-                                            .foregroundColor(r.color)
-                                        Text(r.displayName)
-                                            .font(AppTypography.secondaryMedium)
-                                            .foregroundColor(AppColors.textPrimary)
-                                            .lineLimit(1)
-                                    }
-                                }
+                                RoleSelectionCard(
+                                    role: r,
+                                    isSelected: role == r,
+                                    action: { role = r }
+                                )
                             }
                         }
                     }
 
-                    PrimaryButton(isSaving ? "common.saving".localized : "common.save".localized, icon: "checkmark") {
+                    PrimaryButton(isSaving ? "Saving..." : "Save", icon: "checkmark") {
                         Task {
                             isSaving = true
                             // Save changes
@@ -1557,14 +1551,46 @@ struct EditUserSheet: View {
                 .padding(AppSpacing.md)
             }
             .background(AppColors.background)
-            .navigationTitle("settings.editUser".localized)
+            .navigationTitle("Edit User")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("common.cancel".localized) { dismiss() }
+                    Button("Cancel") { dismiss() }
                 }
             }
         }
+    }
+}
+
+// MARK: - Role Selection Card
+struct RoleSelectionCard: View {
+    let role: UserRole
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: AppSpacing.xs) {
+                Image(systemName: role.icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(isSelected ? role.color : role.color)
+                Text(role.displayName)
+                    .font(AppTypography.secondaryMedium)
+                    .foregroundColor(isSelected ? role.color : AppColors.textPrimary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(AppSpacing.md)
+            .background(
+                RoundedRectangle(cornerRadius: AppSpacing.radiusMedium)
+                    .fill(isSelected ? role.color.opacity(0.15) : AppColors.cardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: AppSpacing.radiusMedium)
+                    .stroke(isSelected ? role.color : AppColors.gray200, lineWidth: isSelected ? 2 : 1)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
