@@ -395,16 +395,33 @@ struct PermissionTemplate: Identifiable, Codable {
     let createdAt: Date?
     let updatedAt: Date?
 
-    enum CodingKeys: String, CodingKey {
+    // Note: No CodingKeys needed - APIClient uses .convertFromSnakeCase
+    // which automatically converts snake_case JSON to camelCase Swift properties
+
+    // Custom decoder to handle potentially missing fields
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        scope = try container.decode(String.self, forKey: .scope)
+        // Provide default empty dict if missing
+        toolPermissions = try container.decodeIfPresent([String: String].self, forKey: .toolPermissions) ?? [:]
+        granularPermissions = try container.decodeIfPresent([String: Bool].self, forKey: .granularPermissions) ?? [:]
+        isSystemDefault = try container.decodeIfPresent(Bool.self, forKey: .isSystemDefault) ?? false
+        isProtected = try container.decodeIfPresent(Bool.self, forKey: .isProtected) ?? false
+        sortOrder = try container.decodeIfPresent(Int.self, forKey: .sortOrder) ?? 0
+        usageCount = try container.decodeIfPresent(Int.self, forKey: .usageCount) ?? 0
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
+    }
+
+    private enum CodingKeys: String, CodingKey {
         case id, name, description, scope
-        case toolPermissions = "tool_permissions"
-        case granularPermissions = "granular_permissions"
-        case isSystemDefault = "is_system_default"
-        case isProtected = "is_protected"
-        case sortOrder = "sort_order"
-        case usageCount = "usage_count"
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
+        case toolPermissions, granularPermissions
+        case isSystemDefault, isProtected
+        case sortOrder, usageCount
+        case createdAt, updatedAt
     }
 
     var isProjectScope: Bool { scope == "project" }
@@ -423,11 +440,7 @@ struct PermissionTemplatesResponse: Decodable {
     let projectTemplates: [PermissionTemplate]
     let companyTemplates: [PermissionTemplate]
 
-    enum CodingKeys: String, CodingKey {
-        case templates
-        case projectTemplates = "project_templates"
-        case companyTemplates = "company_templates"
-    }
+    // Note: No CodingKeys needed - APIClient uses .convertFromSnakeCase
 }
 
 /// User's company permission assignment
@@ -439,14 +452,7 @@ struct UserCompanyPermission: Codable, Identifiable {
     let assignedBy: String?
     let assignedAt: Date?
 
-    enum CodingKeys: String, CodingKey {
-        case id
-        case userId = "user_id"
-        case companyTemplateId = "company_template_id"
-        case companyTemplateName = "company_template_name"
-        case assignedBy = "assigned_by"
-        case assignedAt = "assigned_at"
-    }
+    // Note: No CodingKeys needed - APIClient uses .convertFromSnakeCase
 }
 
 /// User's full permissions including project assignments
@@ -456,12 +462,7 @@ struct UserPermissions: Codable {
     let projectAssignments: [ProjectPermissionAssignment]
     let effectivePermissions: [String: String]
 
-    enum CodingKeys: String, CodingKey {
-        case userId = "user_id"
-        case companyTemplate = "company_template"
-        case projectAssignments = "project_assignments"
-        case effectivePermissions = "effective_permissions"
-    }
+    // Note: No CodingKeys needed - APIClient uses .convertFromSnakeCase
 }
 
 /// Project-level permission assignment for a user
@@ -474,15 +475,7 @@ struct ProjectPermissionAssignment: Identifiable, Codable {
     let roleOverride: String?
     let assignedBy: String?
 
-    enum CodingKeys: String, CodingKey {
-        case id
-        case projectId = "project_id"
-        case projectName = "project_name"
-        case projectTemplateId = "project_template_id"
-        case projectTemplateName = "project_template_name"
-        case roleOverride = "role_override"
-        case assignedBy = "assigned_by"
-    }
+    // Note: No CodingKeys needed - APIClient uses .convertFromSnakeCase
 }
 
 /// Request to assign a company template to a user
