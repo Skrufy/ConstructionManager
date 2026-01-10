@@ -732,6 +732,7 @@ struct DocumentDetailView: View {
     @State private var isLoading = false
     @State private var showError = false
     @State private var errorMessage = ""
+    @State private var showingDocumentViewer = false
 
     var body: some View {
         NavigationStack {
@@ -818,11 +819,9 @@ struct DocumentDetailView: View {
                         PrimaryButton(
                             "documents.view".localized,
                             icon: "eye.fill",
-                            isLoading: isLoading
+                            isLoading: false
                         ) {
-                            Task {
-                                await openDocument()
-                            }
+                            openDocument()
                         }
 
                         OutlineButton("common.download".localized, icon: "arrow.down.circle") {
@@ -847,6 +846,9 @@ struct DocumentDetailView: View {
             } message: {
                 Text(errorMessage)
             }
+            .fullScreenCover(isPresented: $showingDocumentViewer) {
+                DocumentViewerView(document: document)
+            }
         }
     }
 
@@ -856,26 +858,9 @@ struct DocumentDetailView: View {
         return formatter.string(from: date)
     }
 
-    private func openDocument() async {
-        isLoading = true
-        defer { isLoading = false }
-
-        do {
-            // Get signed URL from API
-            let response: FileURLResponse = try await APIClient.shared.get("/files/\(document.id)/url")
-
-            guard let url = URL(string: response.url) else {
-                errorMessage = "Invalid file URL"
-                showError = true
-                return
-            }
-
-            // Open in Safari
-            await UIApplication.shared.open(url)
-        } catch {
-            errorMessage = "Failed to open document: \(error.localizedDescription)"
-            showError = true
-        }
+    private func openDocument() {
+        // Show the in-app document viewer instead of Safari
+        showingDocumentViewer = true
     }
 
     private func downloadDocument() async {
