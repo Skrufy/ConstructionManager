@@ -56,20 +56,6 @@ struct AdminView: View {
                                     subtitle: "admin.invitationsSubtitle".localized
                                 )
                             }
-
-                            Divider()
-                                .padding(.leading, 56)
-
-                            NavigationLink {
-                                RolesPermissionsView()
-                            } label: {
-                                AdminMenuRow(
-                                    icon: "lock.shield.fill",
-                                    iconColor: AppColors.warning,
-                                    title: "admin.rolesTitle".localized,
-                                    subtitle: "admin.rolesSubtitle".localized
-                                )
-                            }
                         }
                         .background(AppColors.cardBackground)
                         .cornerRadius(AppSpacing.radiusMedium)
