@@ -266,43 +266,75 @@ struct CreateTemplateSheet: View {
     @State private var isSaving = false
     @State private var errorMessage: String?
 
-    // Project tools
-    let projectTools = ["daily_logs", "time_tracking", "equipment", "documents", "photos", "schedule", "punch_lists", "safety", "drone_flights", "rfis", "materials"]
-
-    // Company tools
-    let companyTools = ["directory", "financials", "reports", "label_library", "settings", "user_management"]
-
-    var tools: [String] {
-        isCompanyScope ? companyTools : projectTools
-    }
-
     var themeColor: Color {
         isCompanyScope ? AppColors.purple : AppColors.primary600
+    }
+
+    // Tool definitions with descriptions
+    var toolDefinitions: [ToolDefinition] {
+        if isCompanyScope {
+            return [
+                ToolDefinition(id: "directory", name: "Directory", description: "View and manage company contacts and team members", icon: "person.2.fill"),
+                ToolDefinition(id: "financials", name: "Financials", description: "Access budgets, invoices, and financial reports", icon: "dollarsign.circle.fill"),
+                ToolDefinition(id: "reports", name: "Reports", description: "Generate and view company-wide analytics", icon: "chart.bar.fill"),
+                ToolDefinition(id: "label_library", name: "Label Library", description: "Manage custom labels and categories", icon: "tag.fill"),
+                ToolDefinition(id: "settings", name: "Settings", description: "Configure company preferences and integrations", icon: "gearshape.fill"),
+                ToolDefinition(id: "user_management", name: "User Management", description: "Add, edit, and manage user accounts", icon: "person.badge.key.fill")
+            ]
+        } else {
+            return [
+                ToolDefinition(id: "daily_logs", name: "Daily Logs", description: "Record daily activities, weather, and site conditions", icon: "doc.text.fill"),
+                ToolDefinition(id: "time_tracking", name: "Time Tracking", description: "Log work hours and manage timesheets", icon: "clock.fill"),
+                ToolDefinition(id: "equipment", name: "Equipment", description: "Track equipment usage and maintenance", icon: "wrench.and.screwdriver.fill"),
+                ToolDefinition(id: "documents", name: "Documents", description: "Upload and manage project files", icon: "folder.fill"),
+                ToolDefinition(id: "photos", name: "Photos", description: "Capture and organize site photos", icon: "camera.fill"),
+                ToolDefinition(id: "schedule", name: "Schedule", description: "View and manage project timeline", icon: "calendar"),
+                ToolDefinition(id: "punch_lists", name: "Punch Lists", description: "Track deficiencies and completion items", icon: "checklist"),
+                ToolDefinition(id: "safety", name: "Safety", description: "Log incidents and safety inspections", icon: "exclamationmark.shield.fill"),
+                ToolDefinition(id: "rfis", name: "RFIs", description: "Submit and track requests for information", icon: "questionmark.circle.fill"),
+                ToolDefinition(id: "materials", name: "Materials", description: "Track material deliveries and inventory", icon: "shippingbox.fill")
+            ]
+        }
     }
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: AppSpacing.lg) {
-                    // Template Info
+                VStack(alignment: .leading, spacing: AppSpacing.xl) {
+                    // Template Info Section
                     VStack(alignment: .leading, spacing: AppSpacing.md) {
-                        AppTextField(
-                            label: "Template Name",
-                            placeholder: "Enter template name",
-                            text: $templateName,
-                            icon: "tag",
-                            isRequired: true
-                        )
-
+                        // Name Field
                         VStack(alignment: .leading, spacing: AppSpacing.xs) {
-                            Text("Description")
+                            Text("Template Name")
                                 .font(AppTypography.label)
                                 .foregroundColor(AppColors.textPrimary)
 
-                            TextEditor(text: $templateDescription)
+                            TextField("e.g., Field Supervisor Access", text: $templateName)
                                 .font(AppTypography.body)
-                                .frame(minHeight: 80)
-                                .padding(AppSpacing.sm)
+                                .padding(AppSpacing.md)
+                                .background(AppColors.cardBackground)
+                                .cornerRadius(AppSpacing.radiusMedium)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: AppSpacing.radiusMedium)
+                                        .stroke(templateName.isEmpty ? AppColors.gray200 : themeColor, lineWidth: 1)
+                                )
+                        }
+
+                        // Description Field (optional)
+                        VStack(alignment: .leading, spacing: AppSpacing.xs) {
+                            HStack {
+                                Text("Description")
+                                    .font(AppTypography.label)
+                                    .foregroundColor(AppColors.textPrimary)
+                                Text("(Optional)")
+                                    .font(AppTypography.caption)
+                                    .foregroundColor(AppColors.textTertiary)
+                            }
+
+                            TextField("Brief description of this template's purpose", text: $templateDescription, axis: .vertical)
+                                .font(AppTypography.body)
+                                .lineLimit(2...4)
+                                .padding(AppSpacing.md)
                                 .background(AppColors.cardBackground)
                                 .cornerRadius(AppSpacing.radiusMedium)
                                 .overlay(
@@ -312,47 +344,83 @@ struct CreateTemplateSheet: View {
                         }
                     }
 
-                    // Tool Access Levels
+                    // Access Levels Legend
                     VStack(alignment: .leading, spacing: AppSpacing.sm) {
-                        Text("Tool Access Levels")
+                        Text("Access Levels")
                             .font(AppTypography.heading3)
                             .foregroundColor(AppColors.textPrimary)
 
-                        Text("Set the default access level for each tool")
+                        HStack(spacing: AppSpacing.lg) {
+                            AccessLevelLegendItem(level: .none)
+                            AccessLevelLegendItem(level: .readOnly)
+                            AccessLevelLegendItem(level: .standard)
+                            AccessLevelLegendItem(level: .admin)
+                        }
+                    }
+
+                    // Tool Permissions
+                    VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                        Text("Tool Permissions")
+                            .font(AppTypography.heading3)
+                            .foregroundColor(AppColors.textPrimary)
+
+                        Text("Configure access for each tool in this template")
                             .font(AppTypography.secondary)
                             .foregroundColor(AppColors.textSecondary)
 
-                        ForEach(tools, id: \.self) { tool in
-                            EditableToolAccessRow(
-                                tool: tool,
-                                selectedLevel: Binding(
-                                    get: { selectedAccessLevels[tool] ?? .standard },
-                                    set: { selectedAccessLevels[tool] = $0 }
-                                ),
-                                themeColor: themeColor
-                            )
+                        VStack(spacing: AppSpacing.sm) {
+                            ForEach(toolDefinitions) { tool in
+                                ToolAccessCard(
+                                    tool: tool,
+                                    selectedLevel: Binding(
+                                        get: { selectedAccessLevels[tool.id] ?? .standard },
+                                        set: { selectedAccessLevels[tool.id] = $0 }
+                                    ),
+                                    themeColor: themeColor
+                                )
+                            }
                         }
                     }
 
                     if let error = errorMessage {
-                        Text(error)
-                            .font(AppTypography.secondary)
-                            .foregroundColor(AppColors.error)
-                            .padding(AppSpacing.sm)
-                            .frame(maxWidth: .infinity)
-                            .background(AppColors.errorLight)
-                            .cornerRadius(AppSpacing.radiusMedium)
+                        HStack(spacing: AppSpacing.sm) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(AppColors.error)
+                            Text(error)
+                                .font(AppTypography.secondary)
+                                .foregroundColor(AppColors.error)
+                        }
+                        .padding(AppSpacing.md)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(AppColors.errorLight)
+                        .cornerRadius(AppSpacing.radiusMedium)
                     }
 
-                    // Save Button
-                    PrimaryButton(isSaving ? "Creating..." : "Create Template", icon: "checkmark") {
-                        Task {
-                            await createTemplate()
+                    // Create Button
+                    Button(action: {
+                        Task { await createTemplate() }
+                    }) {
+                        HStack(spacing: AppSpacing.sm) {
+                            if isSaving {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(0.8)
+                            } else {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 16, weight: .semibold))
+                            }
+                            Text(isSaving ? "Creating..." : "Create Template")
+                                .font(AppTypography.buttonLarge)
                         }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AppSpacing.md)
+                        .background(templateName.isEmpty || isSaving ? AppColors.gray400 : themeColor)
+                        .cornerRadius(AppSpacing.radiusMedium)
                     }
                     .disabled(templateName.isEmpty || isSaving)
                 }
-                .padding(AppSpacing.md)
+                .padding(AppSpacing.lg)
                 .padding(.bottom, AppSpacing.xl)
             }
             .background(AppColors.background)
@@ -361,13 +429,13 @@ struct CreateTemplateSheet: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") { dismiss() }
+                        .foregroundColor(AppColors.textSecondary)
                 }
             }
         }
         .onAppear {
-            // Initialize with default access levels
-            for tool in tools {
-                selectedAccessLevels[tool] = .standard
+            for tool in toolDefinitions {
+                selectedAccessLevels[tool.id] = .standard
             }
         }
     }
@@ -377,7 +445,6 @@ struct CreateTemplateSheet: View {
         errorMessage = nil
 
         do {
-            // Build permissions object
             var permissions: [String: String] = [:]
             for (tool, level) in selectedAccessLevels {
                 permissions[tool] = level.rawValue
@@ -391,16 +458,22 @@ struct CreateTemplateSheet: View {
             )
 
             try await APIClient.shared.post("/permissions/templates", body: body)
-
-            // Refresh templates
             await AdminService.shared.fetchPermissionTemplates()
             dismiss()
         } catch {
-            errorMessage = "Failed to create template: \(error.localizedDescription)"
+            errorMessage = "Failed to create template. Please try again."
         }
 
         isSaving = false
     }
+}
+
+// MARK: - Tool Definition
+struct ToolDefinition: Identifiable {
+    let id: String
+    let name: String
+    let description: String
+    let icon: String
 }
 
 // MARK: - Create Template Request
@@ -411,43 +484,76 @@ struct CreateTemplateRequest: Encodable {
     let permissions: [String: String]
 }
 
-// MARK: - Editable Tool Access Row
-struct EditableToolAccessRow: View {
-    let tool: String
+// MARK: - Access Level Legend Item
+struct AccessLevelLegendItem: View {
+    let level: AccessLevel
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(level.color)
+                .frame(width: 8, height: 8)
+            Text(level.displayName)
+                .font(AppTypography.caption)
+                .foregroundColor(AppColors.textSecondary)
+        }
+    }
+}
+
+// MARK: - Tool Access Card
+struct ToolAccessCard: View {
+    let tool: ToolDefinition
     @Binding var selectedLevel: AccessLevel
     let themeColor: Color
 
-    var toolDisplayName: String {
-        tool.replacingOccurrences(of: "_", with: " ").capitalized
-    }
-
     var body: some View {
-        AppCard {
-            VStack(spacing: AppSpacing.sm) {
-                HStack {
-                    Text(toolDisplayName)
-                        .font(AppTypography.bodyMedium)
-                        .foregroundColor(AppColors.textPrimary)
-
-                    Spacer()
+        VStack(alignment: .leading, spacing: AppSpacing.sm) {
+            // Tool Header
+            HStack(spacing: AppSpacing.sm) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: AppSpacing.radiusSmall)
+                        .fill(themeColor.opacity(0.12))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: tool.icon)
+                        .font(.system(size: 16))
+                        .foregroundColor(themeColor)
                 }
 
-                // Access Level Buttons
-                HStack(spacing: AppSpacing.xs) {
-                    ForEach(AccessLevel.allCases, id: \.self) { level in
-                        Button(action: { selectedLevel = level }) {
-                            Text(level.displayName)
-                                .font(AppTypography.captionMedium)
-                                .foregroundColor(selectedLevel == level ? .white : level.color)
-                                .padding(.horizontal, AppSpacing.sm)
-                                .padding(.vertical, AppSpacing.xs)
-                                .background(selectedLevel == level ? level.color : level.color.opacity(0.1))
-                                .cornerRadius(AppSpacing.radiusSmall)
-                        }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(tool.name)
+                        .font(AppTypography.bodyMedium)
+                        .foregroundColor(AppColors.textPrimary)
+                    Text(tool.description)
+                        .font(AppTypography.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+            }
+
+            // Access Level Selector
+            HStack(spacing: AppSpacing.xs) {
+                ForEach(AccessLevel.allCases, id: \.self) { level in
+                    Button(action: { selectedLevel = level }) {
+                        Text(level.shortName)
+                            .font(AppTypography.captionMedium)
+                            .foregroundColor(selectedLevel == level ? .white : level.color)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, AppSpacing.sm)
+                            .background(selectedLevel == level ? level.color : level.color.opacity(0.1))
+                            .cornerRadius(AppSpacing.radiusSmall)
                     }
                 }
             }
         }
+        .padding(AppSpacing.md)
+        .background(AppColors.cardBackground)
+        .cornerRadius(AppSpacing.radiusMedium)
+        .overlay(
+            RoundedRectangle(cornerRadius: AppSpacing.radiusMedium)
+                .stroke(AppColors.gray200.opacity(0.5), lineWidth: 1)
+        )
     }
 }
 
@@ -459,6 +565,15 @@ extension AccessLevel {
         case .readOnly: return AppColors.info
         case .standard: return AppColors.success
         case .admin: return AppColors.purple
+        }
+    }
+
+    var shortName: String {
+        switch self {
+        case .none: return "None"
+        case .readOnly: return "View"
+        case .standard: return "Edit"
+        case .admin: return "Admin"
         }
     }
 }
