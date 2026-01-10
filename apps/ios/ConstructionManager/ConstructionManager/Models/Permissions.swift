@@ -387,7 +387,9 @@ struct PermissionTemplate: Identifiable, Codable {
     let description: String?
     let scope: String  // "project" or "company"
     let toolPermissions: [String: String]
-    let granularPermissions: [String: Bool]
+    // granularPermissions can contain various types (bool, array, object)
+    // We store it as raw JSON data and ignore it for now
+    let granularPermissionsRaw: [String: AnyCodableValue]
     let isSystemDefault: Bool
     let isProtected: Bool
     let sortOrder: Int
@@ -398,7 +400,7 @@ struct PermissionTemplate: Identifiable, Codable {
     // Note: No CodingKeys needed - APIClient uses .convertFromSnakeCase
     // which automatically converts snake_case JSON to camelCase Swift properties
 
-    // Custom decoder to handle potentially missing fields
+    // Custom decoder to handle potentially missing fields and flexible types
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
@@ -407,7 +409,8 @@ struct PermissionTemplate: Identifiable, Codable {
         scope = try container.decode(String.self, forKey: .scope)
         // Provide default empty dict if missing
         toolPermissions = try container.decodeIfPresent([String: String].self, forKey: .toolPermissions) ?? [:]
-        granularPermissions = try container.decodeIfPresent([String: Bool].self, forKey: .granularPermissions) ?? [:]
+        // granularPermissions can have mixed types, so decode as AnyCodableValue
+        granularPermissionsRaw = try container.decodeIfPresent([String: AnyCodableValue].self, forKey: .granularPermissions) ?? [:]
         isSystemDefault = try container.decodeIfPresent(Bool.self, forKey: .isSystemDefault) ?? false
         isProtected = try container.decodeIfPresent(Bool.self, forKey: .isProtected) ?? false
         sortOrder = try container.decodeIfPresent(Int.self, forKey: .sortOrder) ?? 0
@@ -418,7 +421,8 @@ struct PermissionTemplate: Identifiable, Codable {
 
     private enum CodingKeys: String, CodingKey {
         case id, name, description, scope
-        case toolPermissions, granularPermissions
+        case toolPermissions
+        case granularPermissions
         case isSystemDefault, isProtected
         case sortOrder, usageCount
         case createdAt, updatedAt
@@ -431,6 +435,52 @@ struct PermissionTemplate: Identifiable, Codable {
     func accessLevel(for tool: String) -> AccessLevel {
         guard let level = toolPermissions[tool] else { return .none }
         return AccessLevel(rawValue: level) ?? .none
+    }
+}
+
+/// A type-erased Codable value for handling mixed JSON types
+enum AnyCodableValue: Codable {
+    case bool(Bool)
+    case int(Int)
+    case double(Double)
+    case string(String)
+    case array([AnyCodableValue])
+    case dictionary([String: AnyCodableValue])
+    case null
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+
+        if container.decodeNil() {
+            self = .null
+        } else if let boolValue = try? container.decode(Bool.self) {
+            self = .bool(boolValue)
+        } else if let intValue = try? container.decode(Int.self) {
+            self = .int(intValue)
+        } else if let doubleValue = try? container.decode(Double.self) {
+            self = .double(doubleValue)
+        } else if let stringValue = try? container.decode(String.self) {
+            self = .string(stringValue)
+        } else if let arrayValue = try? container.decode([AnyCodableValue].self) {
+            self = .array(arrayValue)
+        } else if let dictValue = try? container.decode([String: AnyCodableValue].self) {
+            self = .dictionary(dictValue)
+        } else {
+            self = .null
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .bool(let value): try container.encode(value)
+        case .int(let value): try container.encode(value)
+        case .double(let value): try container.encode(value)
+        case .string(let value): try container.encode(value)
+        case .array(let value): try container.encode(value)
+        case .dictionary(let value): try container.encode(value)
+        case .null: try container.encodeNil()
+        }
     }
 }
 
