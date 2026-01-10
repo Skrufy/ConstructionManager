@@ -286,53 +286,107 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Format results
+    // Format results with snake_case for iOS compatibility
     const results = [
       ...projects.map((p) => ({
-        type: 'project' as const,
+        type: 'PROJECT',
         id: p.id,
         title: p.name,
         subtitle: p.address || p.status,
+        description: null,
+        project_id: null,
+        project_name: null,
+        matched_field: 'name',
+        matched_text: null,
+        created_at: null,
+        updated_at: null,
       })),
       ...dailyLogs.map((l) => ({
-        type: 'daily-log' as const,
+        type: 'DAILY_LOG',
         id: l.id,
         title: l.notes?.slice(0, 50) || `Log from ${new Date(l.date).toLocaleDateString()}`,
-        subtitle: l.project?.name,
+        subtitle: l.project?.name || null,
+        description: l.notes,
+        project_id: null,
+        project_name: l.project?.name || null,
+        matched_field: 'notes',
+        matched_text: null,
+        created_at: l.date.toISOString(),
+        updated_at: null,
       })),
       ...users.map((u) => ({
-        type: 'user' as const,
+        type: 'USER',
         id: u.id,
         title: u.name,
         subtitle: u.role.replace('_', ' '),
+        description: u.email,
+        project_id: null,
+        project_name: null,
+        matched_field: 'name',
+        matched_text: null,
+        created_at: null,
+        updated_at: null,
       })),
       ...equipment.map((e) => ({
-        type: 'equipment' as const,
+        type: 'EQUIPMENT',
         id: e.id,
         title: e.name,
         subtitle: e.type || e.status,
+        description: null,
+        project_id: null,
+        project_name: null,
+        matched_field: 'name',
+        matched_text: null,
+        created_at: null,
+        updated_at: null,
       })),
       ...documents.map((d) => ({
-        type: 'document' as const,
+        type: 'DOCUMENT',
         id: d.id,
         title: d.name,
         subtitle: d.project?.name || d.category || 'Document',
+        description: null,
+        project_id: null,
+        project_name: d.project?.name || null,
+        matched_field: 'name',
+        matched_text: null,
+        created_at: null,
+        updated_at: null,
       })),
       ...safetyItems.map((s) => ({
-        type: 'safety' as const,
+        type: 'TASK',  // Map safety to TASK type for iOS
         id: s.id,
         title: s.incidentType.replace('_', ' '),
         subtitle: s.project?.name || s.status,
+        description: null,
+        project_id: null,
+        project_name: s.project?.name || null,
+        matched_field: 'type',
+        matched_text: null,
+        created_at: null,
+        updated_at: null,
       })),
       ...subcontractors.map((s) => ({
-        type: 'subcontractor' as const,
+        type: 'SUBCONTRACTOR',
         id: s.id,
         title: s.companyName,
         subtitle: s.contactName || 'Subcontractor',
+        description: null,
+        project_id: null,
+        project_name: null,
+        matched_field: 'name',
+        matched_text: null,
+        created_at: null,
+        updated_at: null,
       })),
     ]
 
-    return NextResponse.json({ results })
+    return NextResponse.json({
+      results,
+      total_count: results.length,
+      query: query,
+      filters: category ? { category } : null,
+    })
   } catch (error) {
     console.error('Search error:', error)
     return NextResponse.json({ error: 'Search failed' }, { status: 500 })

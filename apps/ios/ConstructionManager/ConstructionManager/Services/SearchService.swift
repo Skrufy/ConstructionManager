@@ -71,8 +71,8 @@ struct SearchResult: Identifiable, Codable {
 // MARK: - Search Response
 struct SearchResponse: Codable {
     let results: [SearchResult]
-    let totalCount: Int
-    let query: String
+    let totalCount: Int?
+    let query: String?
     let filters: [String: String]?
     // Note: No explicit CodingKeys needed - APIClient uses convertFromSnakeCase
 }
