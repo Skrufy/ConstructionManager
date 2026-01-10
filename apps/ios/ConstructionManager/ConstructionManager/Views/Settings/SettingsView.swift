@@ -525,7 +525,7 @@ struct ProfileSettingsTab: View {
 // MARK: - Company Settings Tab
 struct CompanySettingsTab: View {
     @EnvironmentObject var appState: AppState
-    @State private var companyName = "Construction Co."
+    @State private var companyName = ""
     @State private var selectedTimezone = "America/Los_Angeles"
     @State private var selectedDateFormat = DateFormatOption.mmddyyyy
     @State private var selectedCurrency = CurrencyOption.usd
@@ -536,6 +536,7 @@ struct CompanySettingsTab: View {
     @State private var requireApproval = true
     @State private var pushNotifications = true
     @State private var isSaving = false
+    @State private var isLoading = true
     @State private var showingSavedAlert = false
     @State private var emailNotifications = true
     @State private var hideBuildingInfo = false
@@ -553,6 +554,19 @@ struct CompanySettingsTab: View {
     var body: some View {
         ScrollView {
             VStack(spacing: AppSpacing.xl) {
+                // Loading overlay
+                if isLoading {
+                    VStack(spacing: AppSpacing.md) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle())
+                        Text("settings.loading".localized)
+                            .font(AppTypography.secondary)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, AppSpacing.xxl)
+                }
+
                 // Company Info Section
                 SettingsSectionCard(
                     title: "settings.companyInfo".localized,
@@ -717,6 +731,79 @@ struct CompanySettingsTab: View {
         .onAppear {
             // Initialize toggle state from appState
             hideBuildingInfo = appState.hideBuildingInfo
+            // Load company settings from API
+            Task {
+                await loadCompanySettings()
+            }
+        }
+    }
+
+    private func loadCompanySettings() async {
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            struct SettingsResponse: Decodable {
+                let company: CompanySettingsData?
+            }
+
+            struct CompanySettingsData: Decodable {
+                let companyName: String?
+                let timezone: String?
+                let dateFormat: String?
+                let currency: String?
+                let requireGpsClockIn: Bool?
+                let requirePhotoDaily: Bool?
+                let autoApproveTimesheet: Bool?
+                let dailyLogApprovalRequired: Bool?
+                let pushNotifications: Bool?
+                let emailNotifications: Bool?
+                let hideBuildingInfo: Bool?
+            }
+
+            let response: SettingsResponse = try await APIClient.shared.get("/settings")
+
+            if let company = response.company {
+                // Update state with server values
+                if let name = company.companyName, !name.isEmpty {
+                    companyName = name
+                }
+                if let tz = company.timezone, !tz.isEmpty {
+                    selectedTimezone = tz
+                }
+                if let format = company.dateFormat,
+                   let dateFormat = DateFormatOption(rawValue: format) {
+                    selectedDateFormat = dateFormat
+                }
+                if let curr = company.currency,
+                   let currency = CurrencyOption(rawValue: curr) {
+                    selectedCurrency = currency
+                }
+                if let gps = company.requireGpsClockIn {
+                    requireGPS = gps
+                }
+                if let photo = company.requirePhotoDaily {
+                    requirePhoto = photo
+                }
+                if let auto = company.autoApproveTimesheet {
+                    autoApprove = auto
+                }
+                if let approval = company.dailyLogApprovalRequired {
+                    requireApproval = approval
+                }
+                if let push = company.pushNotifications {
+                    pushNotifications = push
+                }
+                if let email = company.emailNotifications {
+                    emailNotifications = email
+                }
+                if let hide = company.hideBuildingInfo {
+                    hideBuildingInfo = hide
+                    appState.hideBuildingInfo = hide
+                }
+            }
+        } catch {
+            print("Failed to load company settings: \(error)")
         }
     }
 
@@ -725,35 +812,44 @@ struct CompanySettingsTab: View {
         defer { isSaving = false }
 
         do {
-            struct CompanySettingsUpdate: Encodable {
+            // Settings payload matching API schema
+            struct CompanySettingsPayload: Encodable {
                 let companyName: String
                 let timezone: String
                 let dateFormat: String
                 let currency: String
-                let requireGPS: Bool
-                let requirePhoto: Bool
-                let autoApprove: Bool
-                let requireApproval: Bool
+                let requireGpsClockIn: Bool
+                let requirePhotoDaily: Bool
+                let autoApproveTimesheet: Bool
+                let dailyLogApprovalRequired: Bool
                 let pushNotifications: Bool
                 let emailNotifications: Bool
                 let hideBuildingInfo: Bool
             }
 
-            let update = CompanySettingsUpdate(
+            // Wrapper for PUT /settings API
+            struct SettingsUpdateRequest: Encodable {
+                let type: String
+                let settings: CompanySettingsPayload
+            }
+
+            let settings = CompanySettingsPayload(
                 companyName: companyName,
                 timezone: selectedTimezone,
                 dateFormat: selectedDateFormat.rawValue,
                 currency: selectedCurrency.rawValue,
-                requireGPS: requireGPS,
-                requirePhoto: requirePhoto,
-                autoApprove: autoApprove,
-                requireApproval: requireApproval,
+                requireGpsClockIn: requireGPS,
+                requirePhotoDaily: requirePhoto,
+                autoApproveTimesheet: autoApprove,
+                dailyLogApprovalRequired: requireApproval,
                 pushNotifications: pushNotifications,
                 emailNotifications: emailNotifications,
                 hideBuildingInfo: hideBuildingInfo
             )
 
-            try await APIClient.shared.patch("/settings/company", body: update) as EmptyResponse
+            let request = SettingsUpdateRequest(type: "company", settings: settings)
+
+            try await APIClient.shared.put("/settings", body: request) as EmptyResponse
             showingSavedAlert = true
         } catch {
             print("Failed to save company settings to API: \(error)")
