@@ -445,19 +445,19 @@ struct CreateTemplateSheet: View {
         errorMessage = nil
 
         do {
-            var permissions: [String: String] = [:]
+            var toolPermissions: [String: String] = [:]
             for (tool, level) in selectedAccessLevels {
-                permissions[tool] = level.rawValue
+                toolPermissions[tool] = level.rawValue
             }
 
             let body = CreateTemplateRequest(
                 name: templateName,
                 description: templateDescription.isEmpty ? nil : templateDescription,
                 scope: isCompanyScope ? "company" : "project",
-                permissions: permissions
+                tool_permissions: toolPermissions
             )
 
-            try await APIClient.shared.post("/permissions/templates", body: body)
+            try await APIClient.shared.post("/permissions", body: body)
             await AdminService.shared.fetchPermissionTemplates()
             dismiss()
         } catch {
@@ -481,7 +481,7 @@ struct CreateTemplateRequest: Encodable {
     let name: String
     let description: String?
     let scope: String
-    let permissions: [String: String]
+    let tool_permissions: [String: String]
 }
 
 // MARK: - Access Level Legend Item
@@ -1577,8 +1577,9 @@ struct PermissionToggleRow: View {
 
 // MARK: - Project Access Tab
 struct ProjectAccessTab: View {
-    let projects = Project.mockProjects
+    @StateObject private var projectService = ProjectService.shared
     @State private var selectedProject: Project?
+    @State private var isLoading = true
 
     var body: some View {
         ScrollView {
@@ -1591,13 +1592,42 @@ struct ProjectAccessTab: View {
                     .font(AppTypography.secondary)
                     .foregroundColor(AppColors.textSecondary)
 
-                ForEach(projects) { project in
-                    Button(action: { selectedProject = project }) {
-                        ProjectAccessCard(project: project)
+                if isLoading {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                            .padding(.vertical, AppSpacing.xl)
+                        Spacer()
+                    }
+                } else if projectService.projects.isEmpty {
+                    VStack(spacing: AppSpacing.md) {
+                        Image(systemName: "building.2")
+                            .font(.system(size: 40))
+                            .foregroundColor(AppColors.gray400)
+                        Text("No Projects")
+                            .font(AppTypography.bodyMedium)
+                            .foregroundColor(AppColors.textSecondary)
+                        Text("Projects will appear here once created")
+                            .font(AppTypography.secondary)
+                            .foregroundColor(AppColors.textTertiary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, AppSpacing.xl)
+                } else {
+                    ForEach(projectService.projects) { project in
+                        Button(action: { selectedProject = project }) {
+                            ProjectAccessCard(project: project)
+                        }
                     }
                 }
             }
             .padding(AppSpacing.md)
+        }
+        .onAppear {
+            Task {
+                await projectService.fetchProjects()
+                isLoading = false
+            }
         }
         .sheet(item: $selectedProject) { project in
             ProjectAccessEditor(project: project)
@@ -1642,11 +1672,10 @@ struct ProjectAccessCard: View {
 struct ProjectAccessEditor: View {
     let project: Project
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var userService = UserService.shared
     @State private var projectUsers: [User] = []
     @State private var showingUserPicker = false
-
-    // All available users (would come from API in production)
-    private let allUsers = User.mockUsers
+    @State private var isLoadingUsers = true
 
     var body: some View {
         NavigationStack {
@@ -1734,7 +1763,7 @@ struct ProjectAccessEditor: View {
             }
             .sheet(isPresented: $showingUserPicker) {
                 AddUserToProjectSheet(
-                    allUsers: allUsers,
+                    allUsers: userService.users,
                     existingUsers: projectUsers,
                     onAdd: { user in
                         addUser(user)
@@ -1743,9 +1772,10 @@ struct ProjectAccessEditor: View {
             }
         }
         .onAppear {
-            // In production, fetch users assigned to this project
-            // For now, start with a couple of mock users
-            projectUsers = Array(allUsers.prefix(2))
+            Task {
+                await userService.fetchUsers()
+                isLoadingUsers = false
+            }
         }
     }
 
