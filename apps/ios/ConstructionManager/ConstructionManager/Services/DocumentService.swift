@@ -159,6 +159,7 @@ class DocumentService: ObservableObject {
             category: category.rawValue.uppercased(),
             description: description,
             tags: tags,
+            fileSize: fileData.count,
             blasterIds: blasterIds
         )
 
@@ -330,6 +331,7 @@ struct CreateDocumentRequest: Encodable {
     let category: String?
     let description: String?
     let tags: [String]?
+    let fileSize: Int?
     let blasterIds: [String]?
 }
 

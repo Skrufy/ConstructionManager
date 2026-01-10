@@ -421,6 +421,7 @@ model File {
   type          String   // image, document, video
   storagePath   String
   uploadedBy    String
+  fileSize      Int?     // File size in bytes
   gpsLatitude   Float?
   gpsLongitude  Float?
   takenAt       DateTime?
