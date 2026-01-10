@@ -457,11 +457,19 @@ struct CreateTemplateSheet: View {
                 tool_permissions: toolPermissions
             )
 
-            try await APIClient.shared.post("/permissions", body: body)
+            print("[CreateTemplate] Creating template with name: \(templateName), scope: \(isCompanyScope ? "company" : "project")")
+            print("[CreateTemplate] Tool permissions: \(toolPermissions)")
+
+            let response: PermissionTemplate = try await APIClient.shared.post("/permissions", body: body)
+            print("[CreateTemplate] Success! Created template: \(response.name)")
             await AdminService.shared.fetchPermissionTemplates()
             dismiss()
+        } catch let error as APIError {
+            print("[CreateTemplate] API Error: \(error.localizedDescription)")
+            errorMessage = error.localizedDescription
         } catch {
-            errorMessage = "Failed to create template. Please try again."
+            print("[CreateTemplate] Unknown error: \(error)")
+            errorMessage = "Failed to create template: \(error.localizedDescription)"
         }
 
         isSaving = false
