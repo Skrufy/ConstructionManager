@@ -116,6 +116,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(users.map(u => ({
       ...transformUser(u),
       project_count: u._count.projectAssignments,
+      company_template_name: u.companyPermission?.companyTemplate?.name ?? null,
       companyPermission: u.companyPermission,
     })))
   } catch (error) {

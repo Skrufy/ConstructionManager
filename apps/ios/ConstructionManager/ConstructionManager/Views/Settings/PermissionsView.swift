@@ -661,6 +661,9 @@ struct PermissionTemplateCard: View {
 struct PermissionTemplateDetailView: View {
     let template: PermissionTemplate
     @Environment(\.dismiss) private var dismiss
+    @State private var showingDeleteConfirmation = false
+    @State private var isDeleting = false
+    @State private var deleteError: String?
 
     // Project tools
     let projectTools = ["daily_logs", "time_tracking", "equipment", "documents", "photos", "schedule", "punch_lists", "safety", "drone_flights", "rfis", "materials"]
@@ -670,6 +673,10 @@ struct PermissionTemplateDetailView: View {
 
     var tools: [String] {
         template.isCompanyScope ? companyTools : projectTools
+    }
+
+    var canDelete: Bool {
+        !template.isSystemDefault && !template.isProtected && template.usageCount == 0
     }
 
     var body: some View {
@@ -751,11 +758,52 @@ struct PermissionTemplateDetailView: View {
             .navigationTitle("Template Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    if canDelete {
+                        Button(role: .destructive) {
+                            showingDeleteConfirmation = true
+                        } label: {
+                            Image(systemName: "trash")
+                                .foregroundColor(AppColors.error)
+                        }
+                        .disabled(isDeleting)
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") { dismiss() }
                 }
             }
+            .alert("Delete Template", isPresented: $showingDeleteConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete", role: .destructive) {
+                    Task { await deleteTemplate() }
+                }
+            } message: {
+                Text("Are you sure you want to delete \"\(template.name)\"? This action cannot be undone.")
+            }
+            .alert("Error", isPresented: .constant(deleteError != nil)) {
+                Button("OK") { deleteError = nil }
+            } message: {
+                Text(deleteError ?? "")
+            }
         }
+    }
+
+    private func deleteTemplate() async {
+        isDeleting = true
+        deleteError = nil
+
+        do {
+            try await APIClient.shared.delete("/permissions/\(template.id)")
+            await AdminService.shared.fetchPermissionTemplates()
+            dismiss()
+        } catch let error as APIError {
+            deleteError = error.localizedDescription
+        } catch {
+            deleteError = "Failed to delete template: \(error.localizedDescription)"
+        }
+
+        isDeleting = false
     }
 }
 
@@ -821,8 +869,7 @@ struct UserAssignmentsTab: View {
     @StateObject private var userService = UserService.shared
     @StateObject private var adminService = AdminService.shared
     @State private var searchText = ""
-    @State private var selectedUser: User?
-    @State private var showingAssignModal = false
+    @State private var userToAssign: User?  // Use for sheet(item:) pattern
 
     var filteredUsers: [User] {
         if searchText.isEmpty {
@@ -899,8 +946,7 @@ struct UserAssignmentsTab: View {
                 } else {
                     ForEach(filteredUsers) { user in
                         Button(action: {
-                            selectedUser = user
-                            showingAssignModal = true
+                            userToAssign = user
                         }) {
                             UserAssignmentCard(user: user)
                         }
@@ -915,10 +961,8 @@ struct UserAssignmentsTab: View {
                 await adminService.fetchPermissionTemplates()
             }
         }
-        .sheet(isPresented: $showingAssignModal) {
-            if let user = selectedUser {
-                AssignCompanyTemplateSheet(user: user, companyTemplates: adminService.companyTemplates)
-            }
+        .sheet(item: $userToAssign) { user in
+            AssignCompanyTemplateSheet(user: user)
         }
     }
 }
@@ -984,11 +1028,12 @@ struct UserAssignmentCard: View {
 // MARK: - Assign Company Template Sheet
 struct AssignCompanyTemplateSheet: View {
     let user: User
-    let companyTemplates: [PermissionTemplate]
 
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var adminService = AdminService.shared
     @State private var selectedTemplateId: String = ""
     @State private var isLoading = false
+    @State private var isLoadingTemplates = true
     @State private var errorMessage: String?
 
     var body: some View {
@@ -1024,7 +1069,14 @@ struct AssignCompanyTemplateSheet: View {
                             .font(AppTypography.label)
                             .foregroundColor(AppColors.textPrimary)
 
-                        if companyTemplates.isEmpty {
+                        if isLoadingTemplates {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .padding(.vertical, AppSpacing.lg)
+                                Spacer()
+                            }
+                        } else if adminService.companyTemplates.isEmpty {
                             AppCard {
                                 Text("No company templates available")
                                     .font(AppTypography.secondary)
@@ -1033,7 +1085,7 @@ struct AssignCompanyTemplateSheet: View {
                                     .padding(.vertical, AppSpacing.md)
                             }
                         } else {
-                            ForEach(companyTemplates) { template in
+                            ForEach(adminService.companyTemplates) { template in
                                 Button(action: {
                                     selectedTemplateId = template.id
                                 }) {
@@ -1076,32 +1128,84 @@ struct AssignCompanyTemplateSheet: View {
             }
         }
         .onAppear {
-            // Pre-select current template if user has one
-            if let currentTemplate = companyTemplates.first(where: { $0.name == user.companyTemplateName }) {
-                selectedTemplateId = currentTemplate.id
+            print("[AssignSheet] onAppear - user: \(user.name), current template count: \(adminService.companyTemplates.count)")
+            Task {
+                // Load templates if not already loaded
+                if adminService.companyTemplates.isEmpty {
+                    print("[AssignSheet] Templates empty, fetching...")
+                    await adminService.fetchPermissionTemplates()
+                    print("[AssignSheet] After fetch, template count: \(adminService.companyTemplates.count)")
+                } else {
+                    print("[AssignSheet] Templates already loaded: \(adminService.companyTemplates.count)")
+                }
+
+                await MainActor.run {
+                    isLoadingTemplates = false
+                    print("[AssignSheet] isLoadingTemplates set to false")
+
+                    // Pre-select current template if user has one
+                    if let templateName = user.companyTemplateName,
+                       let currentTemplate = adminService.companyTemplates.first(where: { $0.name == templateName }) {
+                        selectedTemplateId = currentTemplate.id
+                        print("[AssignSheet] Pre-selected template: \(templateName)")
+                    }
+                }
             }
         }
     }
 
     private func assignTemplate() async {
-        isLoading = true
-        errorMessage = nil
+        await MainActor.run { isLoading = true }
+        await MainActor.run { errorMessage = nil }
 
         do {
-            // Call API to assign template
-            try await APIClient.shared.post("/permissions/assign", body: [
-                "user_id": user.id,
-                "company_template_id": selectedTemplateId
-            ])
+            // Call API to assign template using existing Encodable struct from Permissions.swift
+            let request = AssignCompanyTemplateRequest(
+                userId: user.id,
+                companyTemplateId: selectedTemplateId
+            )
+
+            print("[AssignTemplate] ========================================")
+            print("[AssignTemplate] Assigning template \(selectedTemplateId) to user \(user.id)")
+            print("[AssignTemplate] Request - userId: \(request.userId), companyTemplateId: \(request.companyTemplateId)")
+
+            // Debug: Print the JSON that will be sent
+            if let jsonData = try? JSONEncoder().encode(request),
+               let jsonString = String(data: jsonData, encoding: .utf8) {
+                print("[AssignTemplate] JSON being sent: \(jsonString)")
+            }
+
+            // Use the version that captures the response for debugging
+            struct AssignResponse: Decodable {
+                let id: String?
+                let userId: String?
+                let companyTemplateId: String?
+                let companyTemplateName: String?
+
+                enum CodingKeys: String, CodingKey {
+                    case id
+                    case userId = "user_id"
+                    case companyTemplateId = "company_template_id"
+                    case companyTemplateName = "company_template_name"
+                }
+            }
+
+            let response: AssignResponse = try await APIClient.shared.post("/permissions/assign", body: request)
+            print("[AssignTemplate] Successfully assigned template! Response id: \(response.id ?? "nil")")
 
             // Refresh user data
             await UserService.shared.fetchUsers()
-            dismiss()
+            await MainActor.run { dismiss() }
+        } catch let error as APIError {
+            print("[AssignTemplate] API Error: \(error)")
+            print("[AssignTemplate] API Error description: \(error.localizedDescription)")
+            await MainActor.run { errorMessage = error.localizedDescription }
         } catch {
-            errorMessage = "Failed to assign template: \(error.localizedDescription)"
+            print("[AssignTemplate] General Error: \(error)")
+            await MainActor.run { errorMessage = "Failed to assign template: \(error.localizedDescription)" }
         }
 
-        isLoading = false
+        await MainActor.run { isLoading = false }
     }
 }
 
@@ -1681,9 +1785,11 @@ struct ProjectAccessEditor: View {
     let project: Project
     @Environment(\.dismiss) private var dismiss
     @StateObject private var userService = UserService.shared
-    @State private var projectUsers: [User] = []
+    @State private var teamAssignments: [APIProjectAssignment] = []
     @State private var showingUserPicker = false
-    @State private var isLoadingUsers = true
+    @State private var isLoading = true
+    @State private var isSaving = false
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -1710,6 +1816,20 @@ struct ProjectAccessEditor: View {
                         }
                     }
 
+                    if let error = errorMessage {
+                        HStack(spacing: AppSpacing.sm) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(AppColors.error)
+                            Text(error)
+                                .font(AppTypography.secondary)
+                                .foregroundColor(AppColors.error)
+                        }
+                        .padding(AppSpacing.md)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(AppColors.errorLight)
+                        .cornerRadius(AppSpacing.radiusMedium)
+                    }
+
                     // Users with Access
                     VStack(alignment: .leading, spacing: AppSpacing.sm) {
                         HStack {
@@ -1719,12 +1839,24 @@ struct ProjectAccessEditor: View {
 
                             Spacer()
 
-                            Text("\(projectUsers.count) users")
-                                .font(AppTypography.secondary)
-                                .foregroundColor(AppColors.textTertiary)
+                            if isLoading {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                            } else {
+                                Text("\(teamAssignments.count) users")
+                                    .font(AppTypography.secondary)
+                                    .foregroundColor(AppColors.textTertiary)
+                            }
                         }
 
-                        if projectUsers.isEmpty {
+                        if isLoading {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .padding(.vertical, AppSpacing.xl)
+                                Spacer()
+                            }
+                        } else if teamAssignments.isEmpty {
                             AppCard {
                                 VStack(spacing: AppSpacing.sm) {
                                     Image(systemName: "person.badge.plus")
@@ -1742,12 +1874,11 @@ struct ProjectAccessEditor: View {
                                 .padding(.vertical, AppSpacing.lg)
                             }
                         } else {
-                            ForEach(projectUsers) { user in
-                                ProjectUserAccessRow(
-                                    user: user,
-                                    project: project,
+                            ForEach(teamAssignments, id: \.id) { assignment in
+                                ProjectTeamMemberRow(
+                                    assignment: assignment,
                                     onRemove: {
-                                        removeUser(user)
+                                        Task { await removeTeamMember(assignment) }
                                     }
                                 )
                             }
@@ -1758,6 +1889,7 @@ struct ProjectAccessEditor: View {
                     OutlineButton("Add User to Project", icon: "plus") {
                         showingUserPicker = true
                     }
+                    .disabled(isSaving)
                 }
                 .padding(AppSpacing.md)
             }
@@ -1772,32 +1904,204 @@ struct ProjectAccessEditor: View {
             .sheet(isPresented: $showingUserPicker) {
                 AddUserToProjectSheet(
                     allUsers: userService.users,
-                    existingUsers: projectUsers,
+                    existingUsers: teamAssignments.map { assignment in
+                        // Convert to User for comparison
+                        User(
+                            id: assignment.user.id,
+                            name: assignment.user.name,
+                            email: assignment.user.email,
+                            phone: nil,
+                            role: UserRole(rawValue: assignment.user.role) ?? .fieldWorker,
+                            status: .active,
+                            isBlaster: nil,
+                            createdAt: Date(),
+                            language: nil,
+                            companyTemplateName: nil
+                        )
+                    },
                     onAdd: { user in
-                        addUser(user)
+                        Task { await addUserToProject(user) }
                     }
                 )
             }
         }
         .onAppear {
             Task {
+                await loadTeamMembers()
                 await userService.fetchUsers()
-                isLoadingUsers = false
             }
         }
     }
 
-    private func addUser(_ user: User) {
-        if !projectUsers.contains(where: { $0.id == user.id }) {
-            withAnimation {
-                projectUsers.append(user)
+    private func loadTeamMembers() async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            print("[ProjectAccess] Loading team for project \(project.id)")
+            let response: ProjectTeamResponse = try await APIClient.shared.get("/projects/\(project.id)/team")
+            print("[ProjectAccess] Loaded \(response.assignments.count) team members")
+            await MainActor.run {
+                teamAssignments = response.assignments
             }
+        } catch let error as APIError {
+            print("[ProjectAccess] API Error: \(error.localizedDescription)")
+            await MainActor.run {
+                errorMessage = error.localizedDescription
+            }
+        } catch {
+            print("[ProjectAccess] Error: \(error)")
+            await MainActor.run {
+                errorMessage = "Failed to load team members"
+            }
+        }
+
+        await MainActor.run {
+            isLoading = false
         }
     }
 
-    private func removeUser(_ user: User) {
-        withAnimation {
-            projectUsers.removeAll { $0.id == user.id }
+    private func addUserToProject(_ user: User) async {
+        isSaving = true
+        errorMessage = nil
+
+        do {
+            let request = AddTeamMemberRequest(
+                userId: user.id,
+                roleOverride: nil
+            )
+
+            print("[ProjectAccess] Adding user \(user.id) to project \(project.id)")
+            let response: AssignmentResponse = try await APIClient.shared.post("/projects/\(project.id)/team", body: request)
+            print("[ProjectAccess] Successfully added user")
+
+            await MainActor.run {
+                teamAssignments.append(response.assignment)
+            }
+        } catch let error as APIError {
+            print("[ProjectAccess] API Error: \(error.localizedDescription)")
+            await MainActor.run {
+                errorMessage = error.localizedDescription
+            }
+        } catch {
+            print("[ProjectAccess] Error: \(error)")
+            await MainActor.run {
+                errorMessage = "Failed to add user to project"
+            }
+        }
+
+        await MainActor.run {
+            isSaving = false
+        }
+    }
+
+    private func removeTeamMember(_ assignment: APIProjectAssignment) async {
+        isSaving = true
+        errorMessage = nil
+
+        do {
+            print("[ProjectAccess] Removing assignment \(assignment.id) from project \(project.id)")
+            try await APIClient.shared.delete("/projects/\(project.id)/team?assignmentId=\(assignment.id)")
+            print("[ProjectAccess] Successfully removed user")
+
+            await MainActor.run {
+                teamAssignments.removeAll { $0.id == assignment.id }
+            }
+        } catch let error as APIError {
+            print("[ProjectAccess] API Error: \(error.localizedDescription)")
+            await MainActor.run {
+                errorMessage = error.localizedDescription
+            }
+        } catch {
+            print("[ProjectAccess] Error: \(error)")
+            await MainActor.run {
+                errorMessage = "Failed to remove user from project"
+            }
+        }
+
+        await MainActor.run {
+            isSaving = false
+        }
+    }
+}
+
+// MARK: - Project Team Member Row
+struct ProjectTeamMemberRow: View {
+    let assignment: APIProjectAssignment
+    var onRemove: (() -> Void)? = nil
+    @State private var showingRemoveConfirm = false
+
+    var userName: String {
+        assignment.user.name
+    }
+
+    var userRole: UserRole {
+        UserRole(rawValue: assignment.user.role) ?? .fieldWorker
+    }
+
+    var userInitials: String {
+        let words = userName.split(separator: " ")
+        if words.count >= 2 {
+            return String(words[0].prefix(1) + words[1].prefix(1)).uppercased()
+        }
+        return String(userName.prefix(2)).uppercased()
+    }
+
+    var body: some View {
+        AppCard {
+            VStack(spacing: AppSpacing.sm) {
+                HStack(spacing: AppSpacing.sm) {
+                    ZStack {
+                        Circle()
+                            .fill(userRole.color.opacity(0.2))
+                            .frame(width: 40, height: 40)
+                        Text(userInitials)
+                            .font(AppTypography.secondaryMedium)
+                            .foregroundColor(userRole.color)
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(userName)
+                            .font(AppTypography.bodyMedium)
+                            .foregroundColor(AppColors.textPrimary)
+                        Text(userRole.displayName)
+                            .font(AppTypography.caption)
+                            .foregroundColor(userRole.color)
+                    }
+
+                    Spacer()
+
+                    if let roleOverride = assignment.roleOverride {
+                        Text(roleOverride)
+                            .font(AppTypography.captionMedium)
+                            .foregroundColor(AppColors.primary600)
+                            .padding(.horizontal, AppSpacing.xs)
+                            .padding(.vertical, 2)
+                            .background(AppColors.primary100)
+                            .cornerRadius(AppSpacing.radiusSmall)
+                    }
+
+                    if onRemove != nil {
+                        Button(action: { showingRemoveConfirm = true }) {
+                            Image(systemName: "minus.circle.fill")
+                                .font(.system(size: 22))
+                                .foregroundColor(AppColors.error)
+                        }
+                    }
+                }
+            }
+        }
+        .confirmationDialog(
+            "Remove \(userName) from project?",
+            isPresented: $showingRemoveConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Remove", role: .destructive) {
+                onRemove?()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This user will no longer have access to this project.")
         }
     }
 }
@@ -1942,81 +2246,6 @@ struct UserPickerRow: View {
                 RoundedRectangle(cornerRadius: AppSpacing.radiusMedium)
                     .stroke(AppColors.gray200, lineWidth: 1)
             )
-        }
-    }
-}
-
-// MARK: - Project User Access Row
-struct ProjectUserAccessRow: View {
-    let user: User
-    let project: Project
-    var onRemove: (() -> Void)? = nil
-    @State private var hasElevatedAccess = false
-    @State private var showingRemoveConfirm = false
-
-    var body: some View {
-        AppCard {
-            VStack(spacing: AppSpacing.sm) {
-                HStack(spacing: AppSpacing.sm) {
-                    ZStack {
-                        Circle()
-                            .fill(user.role.color.opacity(0.2))
-                            .frame(width: 40, height: 40)
-                        Text(user.initials)
-                            .font(AppTypography.secondaryMedium)
-                            .foregroundColor(user.role.color)
-                    }
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(user.name)
-                            .font(AppTypography.bodyMedium)
-                            .foregroundColor(AppColors.textPrimary)
-                        Text(user.role.displayName)
-                            .font(AppTypography.caption)
-                            .foregroundColor(user.role.color)
-                    }
-
-                    Spacer()
-
-                    if onRemove != nil {
-                        Button(action: { showingRemoveConfirm = true }) {
-                            Image(systemName: "minus.circle.fill")
-                                .font(.system(size: 22))
-                                .foregroundColor(AppColors.error)
-                        }
-                    }
-
-                    Toggle("", isOn: $hasElevatedAccess)
-                        .labelsHidden()
-                        .tint(AppColors.primary600)
-                }
-
-                if hasElevatedAccess {
-                    HStack {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 12))
-                        Text("User has elevated access on this project")
-                            .font(AppTypography.caption)
-                    }
-                    .foregroundColor(AppColors.warning)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(AppSpacing.xs)
-                    .background(AppColors.warningLight)
-                    .cornerRadius(AppSpacing.radiusSmall)
-                }
-            }
-        }
-        .confirmationDialog(
-            "Remove \(user.name) from project?",
-            isPresented: $showingRemoveConfirm,
-            titleVisibility: .visible
-        ) {
-            Button("Remove", role: .destructive) {
-                onRemove?()
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This user will no longer have access to this project.")
         }
     }
 }
