@@ -21,8 +21,10 @@ export async function GET(request: NextRequest) {
     // Support project filtering
     const projectId = searchParams.get('projectId') || searchParams.get('project_id')
 
-    if (!query || query.length < 2) {
-      return NextResponse.json({ results: [] })
+    // Allow wildcard searches when category is specified
+    const isWildcard = query === '*'
+    if (!query || (query.length < 2 && !isWildcard)) {
+      return NextResponse.json({ results: [], total_count: 0, query: query || '', filters: null })
     }
 
     // Parse types into array of categories (iOS sends comma-separated)
@@ -81,7 +83,7 @@ export async function GET(request: NextRequest) {
     // Search projects with PostgreSQL case-insensitive search
     let projects: Array<{ id: string; name: string; address: string | null; status: string }> = []
     if (searchProjects) {
-      const projectWhere: Record<string, unknown> = {
+      const projectWhere: Record<string, unknown> = isWildcard ? {} : {
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
           { address: { contains: query, mode: 'insensitive' } },
@@ -117,7 +119,7 @@ export async function GET(request: NextRequest) {
     // Search daily logs with PostgreSQL case-insensitive search
     let dailyLogs: Array<{ id: string; date: Date; notes: string | null; project: { name: string } | null }> = []
     if (searchLogs) {
-      const logWhere: Record<string, unknown> = {
+      const logWhere: Record<string, unknown> = isWildcard ? {} : {
         OR: [
           { notes: { contains: query, mode: 'insensitive' } },
           { project: { name: { contains: query, mode: 'insensitive' } } },
@@ -165,7 +167,7 @@ export async function GET(request: NextRequest) {
     let users: Array<{ id: string; name: string; email: string; role: string }> = []
     if (searchUsers && isAdmin) {
       users = await prisma.user.findMany({
-        where: {
+        where: isWildcard ? {} : {
           OR: [
             { name: { contains: query, mode: 'insensitive' } },
             { email: { contains: query, mode: 'insensitive' } },
@@ -186,7 +188,7 @@ export async function GET(request: NextRequest) {
     let equipment: Array<{ id: string; name: string; type: string; status: string }> = []
     if (searchEquipment) {
       equipment = await prisma.equipment.findMany({
-        where: {
+        where: isWildcard ? {} : {
           OR: [
             { name: { contains: query, mode: 'insensitive' } },
             { type: { contains: query, mode: 'insensitive' } },
@@ -206,7 +208,7 @@ export async function GET(request: NextRequest) {
     // Search files/documents
     let documents: Array<{ id: string; name: string; category: string | null; project: { name: string } | null }> = []
     if (searchDocuments) {
-      const documentWhere: Record<string, unknown> = {
+      const documentWhere: Record<string, unknown> = isWildcard ? {} : {
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
           { category: { contains: query, mode: 'insensitive' } },
@@ -237,7 +239,7 @@ export async function GET(request: NextRequest) {
     // Search safety incidents
     let safetyItems: Array<{ id: string; incidentType: string; status: string; project: { name: string } | null }> = []
     if (searchSafety) {
-      const safetyWhere: Record<string, unknown> = {
+      const safetyWhere: Record<string, unknown> = isWildcard ? {} : {
         OR: [
           { incidentType: { contains: query, mode: 'insensitive' } },
           { description: { contains: query, mode: 'insensitive' } },
@@ -270,7 +272,7 @@ export async function GET(request: NextRequest) {
     let subcontractors: Array<{ id: string; companyName: string; contactName: string | null }> = []
     if (searchSubcontractors) {
       subcontractors = await prisma.subcontractor.findMany({
-        where: {
+        where: isWildcard ? {} : {
           OR: [
             { companyName: { contains: query, mode: 'insensitive' } },
             { contactName: { contains: query, mode: 'insensitive' } },

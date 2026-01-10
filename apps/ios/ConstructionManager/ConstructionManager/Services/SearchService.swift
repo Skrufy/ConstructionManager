@@ -102,7 +102,7 @@ let SEARCH_FILTERS: [SearchFilterDefinition] = [
     SearchFilterDefinition("subcontractors", "Subcontractors", aliases: ["subs"])
 ]
 
-// Parse query for filter prefix (e.g., "#projects search term")
+// Parse query for filter prefix (e.g., "#projects search term" or "#proj term")
 func parseSearchQuery(_ query: String) -> (filter: String?, searchTerm: String) {
     let trimmed = query.trimmingCharacters(in: .whitespaces)
     let pattern = "^#(\\w+)\\s*(.*)$"
@@ -116,7 +116,13 @@ func parseSearchQuery(_ query: String) -> (filter: String?, searchTerm: String) 
         let filterName = String(trimmed[filterRange]).lowercased()
         let searchTerm = String(trimmed[searchRange]).trimmingCharacters(in: .whitespaces)
 
+        // Exact match first
         if let filter = SEARCH_FILTERS.first(where: { $0.key == filterName || $0.aliases.contains(filterName) }) {
+            return (filter.key, searchTerm)
+        }
+
+        // Prefix match (e.g., #proj matches projects, #doc matches documents)
+        if let filter = SEARCH_FILTERS.first(where: { $0.key.hasPrefix(filterName) || $0.aliases.contains(where: { $0.hasPrefix(filterName) }) }) {
             return (filter.key, searchTerm)
         }
     }
@@ -159,8 +165,11 @@ class SearchService: ObservableObject {
         let (parsedFilter, searchTerm) = parseSearchQuery(query)
         activeFilter = parsedFilter
 
-        // If only filter prefix with no search term, wait for more input
-        if searchTerm.isEmpty && parsedFilter != nil {
+        // Use wildcard search when filter is set but no search term
+        let effectiveSearchTerm = searchTerm.isEmpty && parsedFilter != nil ? "*" : searchTerm
+
+        // If no filter and no search term, clear results
+        if effectiveSearchTerm.isEmpty || effectiveSearchTerm == "*" && parsedFilter == nil {
             results = []
             return
         }
@@ -170,7 +179,7 @@ class SearchService: ObservableObject {
         defer { isSearching = false }
 
         do {
-            var params: [String: String] = ["q": searchTerm]
+            var params: [String: String] = ["q": effectiveSearchTerm]
             if let types = types {
                 params["types"] = types.map { $0.rawValue }.joined(separator: ",")
             }

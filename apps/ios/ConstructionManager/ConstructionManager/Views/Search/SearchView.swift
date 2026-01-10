@@ -12,6 +12,7 @@ struct SearchView: View {
     @State private var searchText = ""
     @State private var selectedTypes: Set<SearchResultType> = []
     @Environment(\.dismiss) private var dismiss
+    @FocusState private var isSearchFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -50,6 +51,12 @@ struct SearchView: View {
                 }
             }
         }
+        .onAppear {
+            // Auto-focus search field when view appears
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                isSearchFocused = true
+            }
+        }
     }
 
     private var searchBar: some View {
@@ -61,6 +68,7 @@ struct SearchView: View {
                     .font(AppTypography.body)
                     .foregroundColor(AppColors.textPrimary)
                     .autocorrectionDisabled()
+                    .focused($isSearchFocused)
                 if !searchText.isEmpty {
                     Button(action: {
                         searchText = ""
