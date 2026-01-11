@@ -528,6 +528,11 @@ Unauthenticated requests will receive a 401 response. Requests from unauthorized
 | GET | `/equipment/[id]` | Get equipment details | Required |
 | PUT | `/equipment/[id]` | Update equipment | Required |
 | DELETE | `/equipment/[id]` | Delete equipment | Required |
+| GET | `/equipment/[id]/service-logs` | Get equipment service history | Required |
+| POST | `/equipment/[id]/service-logs` | Create service log entry | Required |
+| GET | `/equipment/[id]/service-logs/[logId]` | Get service log details | Required |
+| PUT | `/equipment/[id]/service-logs/[logId]` | Update service log | Required |
+| DELETE | `/equipment/[id]/service-logs/[logId]` | Delete service log | Required |
 
 #### Documents
 
@@ -540,15 +545,43 @@ Unauthenticated requests will receive a 401 response. Requests from unauthorized
 | DELETE | `/documents/[id]` | Delete document | Required |
 | POST | `/documents/[id]/annotations` | Add annotation | Required |
 | GET | `/documents/[id]/revisions` | Get revision history | Required |
+| POST | `/documents/[id]/revisions/upload` | Upload new revision | Required |
+| GET | `/documents/[id]/metadata` | Get document metadata | Required |
+| POST | `/documents/[id]/split` | Split multi-page document | Required |
+| POST | `/documents/split/start` | Start document split process | Required |
+| GET | `/documents/split/drafts` | Get split drafts | Required |
+| GET | `/documents/split/[draftId]` | Get split draft details | Required |
+| POST | `/documents/split/[draftId]/confirm` | Confirm document split | Required |
+| POST | `/documents/split/[draftId]/check-revisions` | Check for revision conflicts | Required |
+| POST | `/documents/analyze` | Analyze document with AI | Required |
+| POST | `/documents/ocr/start` | Start OCR processing | Required |
+| GET | `/documents/ocr/jobs` | List OCR jobs | Required |
+| GET | `/documents/ocr/[jobId]` | Get OCR job status | Required |
 
 #### Safety
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
+| GET | `/safety/inspections` | List inspections | Required |
 | POST | `/safety/inspections` | Create inspection | Required |
+| GET | `/safety/inspections/[id]` | Get inspection details | Required |
+| PUT | `/safety/inspections/[id]` | Update inspection | Required |
+| GET | `/safety/inspection-templates` | List inspection templates | Required |
+| POST | `/safety/inspection-templates` | Create inspection template | Required |
+| GET | `/safety/incidents` | List incidents | Required |
 | POST | `/safety/incidents` | Report incident | Required |
+| GET | `/safety/incidents/[id]` | Get incident details | Required |
+| PUT | `/safety/incidents/[id]` | Update incident | Required |
+| GET | `/safety/meetings` | List safety meetings | Required |
 | POST | `/safety/meetings` | Log safety meeting | Required |
+| GET | `/safety/meetings/[id]` | Get meeting details | Required |
+| PUT | `/safety/meetings/[id]` | Update meeting | Required |
+| GET | `/safety/topics` | List safety topics | Required |
+| POST | `/safety/topics` | Create safety topic | Required |
+| GET | `/safety/punch-lists` | List punch lists | Required |
 | POST | `/safety/punch-lists` | Create punch list | Required |
+| GET | `/safety/punch-lists/[id]` | Get punch list details | Required |
+| PUT | `/safety/punch-lists/[id]` | Update punch list | Required |
 
 #### Financials
 
@@ -569,6 +602,148 @@ Unauthenticated requests will receive a 401 response. Requests from unauthorized
 | PUT | `/users/[id]` | Update user | Required |
 | DELETE | `/users/[id]` | Delete user (admin) | Required |
 | POST | `/users/me/password` | Change password | Required |
+| GET | `/users/me/preferences` | Get user preferences | Required |
+| PUT | `/users/me/preferences` | Update user preferences | Required |
+| GET | `/users/blasters` | List certified blasters | Required |
+
+#### Employees
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/employees` | List employees | Required |
+| POST | `/employees` | Create employee | Required |
+| POST | `/employees/bulk` | Bulk import employees (CSV) | Required |
+| GET | `/employees/[id]` | Get employee details | Required |
+| PUT | `/employees/[id]` | Update employee | Required |
+| DELETE | `/employees/[id]` | Delete employee | Required |
+
+#### Tasks
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/tasks` | List tasks | Required |
+| POST | `/tasks` | Create task | Required |
+| GET | `/tasks/[id]` | Get task details | Required |
+| PUT | `/tasks/[id]` | Update task | Required |
+| DELETE | `/tasks/[id]` | Delete task | Required |
+| POST | `/tasks/[id]/subtasks` | Create subtask | Required |
+| GET | `/tasks/[id]/subtasks` | List subtasks | Required |
+| PUT | `/tasks/[id]/subtasks/[subtaskId]` | Update subtask | Required |
+| DELETE | `/tasks/[id]/subtasks/[subtaskId]` | Delete subtask | Required |
+
+#### RFIs
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/rfis` | List RFIs | Required |
+| POST | `/rfis` | Create RFI | Required |
+| GET | `/rfis/[id]` | Get RFI details | Required |
+| PUT | `/rfis/[id]` | Update RFI | Required |
+| DELETE | `/rfis/[id]` | Delete RFI | Required |
+
+#### Materials
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/materials` | List materials catalog | Required |
+| POST | `/materials` | Add material to catalog | Required |
+| GET | `/materials/[id]` | Get material details | Required |
+| PUT | `/materials/[id]` | Update material | Required |
+| DELETE | `/materials/[id]` | Delete material | Required |
+| GET | `/materials/orders` | List material orders | Required |
+| POST | `/materials/orders` | Create material order | Required |
+| GET | `/materials/orders/[orderId]` | Get order details | Required |
+| PUT | `/materials/orders/[orderId]` | Update order | Required |
+| POST | `/materials/usage` | Log material usage | Required |
+
+#### Permissions
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/permissions` | List permission templates | Required |
+| POST | `/permissions` | Create permission template | Required |
+| GET | `/permissions/[id]` | Get template details | Required |
+| PUT | `/permissions/[id]` | Update template | Required |
+| DELETE | `/permissions/[id]` | Delete template | Required |
+| POST | `/permissions/assign` | Assign template to user | Required |
+| POST | `/permissions/project-assign` | Assign project permissions | Required |
+| GET | `/permissions/user/[userId]` | Get user permissions | Required |
+| POST | `/permissions/check` | Check specific permission | Required |
+| POST | `/permissions/overrides` | Create permission override | Required |
+
+#### Labels
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/labels` | List project labels | Required |
+| POST | `/labels` | Create label | Required |
+| PUT | `/labels/[id]` | Update label | Required |
+| DELETE | `/labels/[id]` | Delete label | Required |
+
+#### Drawings
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/drawings` | List drawings | Required |
+| GET | `/drawings/[id]/scale` | Get drawing scale info | Required |
+| POST | `/drawings/[id]/pins` | Add drawing pin/marker | Required |
+
+#### Admin
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/admin/audit-logs` | Get audit logs | Admin |
+| GET | `/admin/invitations` | List user invitations | Admin |
+| POST | `/admin/invitations` | Send user invitation | Admin |
+| GET | `/admin/invitations/[id]` | Get invitation | Admin |
+| PUT | `/admin/invitations/[id]` | Update invitation | Admin |
+| DELETE | `/admin/invitations/[id]` | Cancel invitation | Admin |
+| POST | `/admin/invitations/[id]/resend` | Resend invitation email | Admin |
+
+#### Search
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/search` | Global search across entities | Required |
+
+#### Notifications
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/notifications` | List notifications | Required |
+| POST | `/notifications/register-device` | Register device for push notifications | Required |
+| POST | `/notifications/test` | Send test notification | Required |
+
+#### Storage
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/storage/upload` | Upload to Supabase Storage | Required |
+| GET | `/storage/health` | Check storage health | Required |
+| POST | `/storage/branding` | Upload brand assets | Required |
+
+#### Utility Endpoints
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/health` | API health check | Public |
+| GET | `/version` | API version information | Public |
+| GET | `/geocode` | Geocode address to coordinates | Required |
+| POST | `/addresses` | Save frequently used address | Required |
+| POST | `/branding` | Update company branding | Required |
+
+#### GraphQL
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/graphql` | GraphQL API endpoint | Required |
+
+#### Cron Jobs
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/cron/dronedeploy-sync` | Sync DroneDeploy data | System |
+| GET | `/cron/api-health` | Health check monitoring | System |
 
 ### Response Format
 
@@ -881,8 +1056,14 @@ Superintendents can approve, request changes, or reject daily logs. SUPERINTENDE
 - Column selection
 - Grouping and sorting
 - Chart visualization (BAR, LINE, PIE, TABLE)
-- Export capabilities
+- Export capabilities (PDF, CSV, Excel)
 - Public/private sharing
+
+#### Generated Reports
+- Save generated report outputs
+- Report history tracking
+- Re-run saved reports
+- Access previously generated data
 
 #### Analytics Dashboard
 - Project KPIs and metrics

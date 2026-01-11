@@ -30,9 +30,12 @@ The platform runs on three platforms:
 
 ### Documents & Drawings
 - **File Management** - Upload, organize, and version control project documents
-- **Drawing Viewer** - Interactive viewer with annotations and measurements
+- **Drawing Viewer** - Interactive viewer with annotations, measurements, and pins
 - **OCR Extraction** - Automatic drawing metadata detection (drawing #, revision, scale)
 - **PDF Splitting** - Break apart multi-page plans into individual sheets
+- **Blasting Documents** - Certified blaster assignments for blasting-related documents
+- **Document Metadata** - Automatic extraction and manual entry of document properties
+- **Supabase Storage** - Cloud storage integration for documents and media
 
 ### Quality & Safety
 - **Inspections** - Customizable checklists for safety and quality inspections
@@ -53,6 +56,21 @@ The platform runs on three platforms:
 - **Samsara** - GPS fleet tracking for equipment location
 - **OpenWeather** - Weather data for daily logs
 - **OpenAI Vision** - OCR extraction from construction drawings
+- **Google Maps** - Address geocoding and location services
+- **Supabase Storage** - Cloud file storage and CDN
+
+### Advanced Features
+- **Task Management** - Project tasks with subtasks, assignments, and due dates
+- **RFI System** - Request for Information workflow with assignment tracking
+- **Materials Management** - Materials catalog, ordering, and usage tracking
+- **Employee Management** - Employee profiles separate from user accounts
+- **Permission System** - Procore-style permission templates with granular controls
+- **User Invitations** - Email-based user invitation system with expiring tokens
+- **Project Labels** - Color-coded labels for project categorization
+- **Global Search** - Search across projects, documents, tasks, and more
+- **Company Branding** - Custom logo and brand color configuration
+- **GraphQL API** - Modern GraphQL endpoint alongside REST API
+- **Service Logs** - Equipment maintenance and service history tracking
 
 ## How It's Built
 
@@ -107,7 +125,7 @@ Both mobile apps implement sophisticated offline capabilities:
 
 ### Role-Based Access Control
 
-Nine hierarchical roles with granular permissions:
+Hierarchical role system with Procore-style permission templates:
 
 | Role | Level | Access |
 |------|-------|--------|
@@ -121,7 +139,12 @@ Nine hierarchical roles with granular permissions:
 | FIELD_WORKER | 2 | Basic field operations |
 | VIEWER | 1 | Read-only access |
 
-Each role has configurable module visibility overrides stored in CompanySettings.
+**Permission System:**
+- Permission templates define granular access controls
+- Company-level template assignment via UserCompanyPermission
+- Project-level permission overrides available
+- Edge case permission overrides via UserPermissionOverride
+- Configurable module visibility stored in CompanySettings
 
 ### Approval Workflows
 
@@ -144,7 +167,7 @@ Multiple approval workflows ensure proper oversight:
 | **Kotlin Lines** | 47,446 |
 | **Swift Files** | 106 |
 | **Swift Lines** | 39,891 |
-| **Prisma Models** | 54 |
+| **Prisma Models** | 67 |
 | **Prisma Schema Lines** | 1,312 |
 | **API Endpoint Directories** | 94 |
 | **Android Screens** | 56 |
@@ -152,48 +175,89 @@ Multiple approval workflows ensure proper oversight:
 
 ## Database Schema
 
-The Prisma schema defines 54 models organized into functional domains:
+The Prisma schema defines 67 models organized into functional domains:
 
 **Core Entities:**
-- User, Project, ProjectAssignment, Client, Subcontractor
+- User, Project, ProjectAssignment, Client, Subcontractor, Employee, Invitation
 
 **Daily Operations:**
 - DailyLog, DailyLogEntry, DailyLogMaterial, DailyLogIssue, DailyLogVisitor
 
 **Time & Equipment:**
-- TimeEntry, Equipment, EquipmentAssignment, EquipmentLog
+- TimeEntry, Equipment, EquipmentAssignment, EquipmentLog, ServiceLog
 
 **Quality & Safety:**
-- InspectionTemplate, Inspection, PunchList, PunchListItem
-- IncidentReport, SafetyMeeting, EmployeeWarning
+- InspectionTemplate, Inspection, InspectionPhoto, PunchList, PunchListItem
+- IncidentReport, SafetyMeeting, SafetyTopic, MeetingAttendee, EmployeeWarning
 
 **Financial:**
 - Budget, Invoice, ChangeOrder, Expense
 
 **Documents:**
-- File, DocumentRevision, DocumentAnnotation, DocumentSplitDraft, DocumentMetadata
+- File, DocumentRevision, DocumentAnnotation, DocumentSplitDraft, DocumentMetadata, OcrJob, FileBlasterAssignment
+
+**Project Management:**
+- ProjectTask, RFI, Label
+
+**Materials:**
+- Material, MaterialOrder, MaterialUsage
 
 **Integrations:**
-- DroneFlight, DroneDeploySync, DroneDeployExport
+- DroneFlight, DroneMap, DroneDeploySync, DroneDeployExport
+
+**Permissions:**
+- PermissionTemplate, UserCompanyPermission, UserPermissionOverride
+
+**Reports:**
+- SavedReport, GeneratedReport
 
 **System:**
-- CompanySettings, UserPreferences, AuditLog, Notification, DeviceToken
+- CompanySettings, OrgSettings, UserPreferences, SavedAddress, AuditLog, Notification, DeviceToken, OAuthState, IntegrationCredential
 
 ## API Endpoints
 
-The REST API provides 94+ endpoint directories covering:
+The REST API provides 40+ endpoint categories covering:
 
-- `/api/auth/*` - Authentication (login, register)
+- `/api/auth/*` - Authentication (login, register, invitations)
 - `/api/projects/*` - Project CRUD, team management
 - `/api/daily-logs/*` - Daily log creation and approval
 - `/api/time-entries/*` - Time tracking and approval
 - `/api/files/*` - Document upload, download, annotations
-- `/api/equipment/*` - Equipment inventory and logging
-- `/api/safety/*` - Inspections, punch lists, incidents
+- `/api/documents/*` - Document management, OCR, splitting, metadata
+- `/api/drawings/*` - Drawing-specific operations, pins, scale
+- `/api/equipment/*` - Equipment inventory, logging, service logs
+- `/api/safety/*` - Inspections, punch lists, incidents, meetings, topics
 - `/api/financials/*` - Budgets, invoices, expenses
-- `/api/integrations/*` - QuickBooks, DroneDeploy, Samsara
-- `/api/settings/*` - Company configuration
-- `/api/users/*` - User management
+- `/api/materials/*` - Materials catalog, orders, usage tracking
+- `/api/tasks/*` - Task management with subtasks
+- `/api/rfis/*` - Request for Information system
+- `/api/employees/*` - Employee management (separate from users)
+- `/api/users/*` - User management and blaster assignments
+- `/api/permissions/*` - Permission templates and assignments
+- `/api/labels/*` - Project labeling system
+- `/api/integrations/*` - QuickBooks, DroneDeploy, Samsara, OpenWeather, OpenAI
+- `/api/settings/*` - Company and organization configuration
+- `/api/approvals/*` - Approval workflows
+- `/api/analytics/*` - Project analytics and metrics
+- `/api/reports/*` - Report generation and saved reports
+- `/api/scheduling/*` - Crew scheduling
+- `/api/certifications/*` - License and certification tracking
+- `/api/clients/*` - Client management
+- `/api/subcontractors/*` - Subcontractor management
+- `/api/notifications/*` - Push notifications and device registration
+- `/api/addresses/*` - Saved address management
+- `/api/branding/*` - Company branding customization
+- `/api/search/*` - Global search across entities
+- `/api/weather/*` - Weather data integration
+- `/api/geocode/*` - Address geocoding
+- `/api/upload/*` - File upload with signed URLs
+- `/api/storage/*` - Supabase storage operations
+- `/api/warnings/*` - Employee warnings management
+- `/api/admin/*` - Admin operations (audit logs, invitations)
+- `/api/graphql` - GraphQL API endpoint
+- `/api/cron/*` - Scheduled background tasks
+- `/api/health` - API health check
+- `/api/version` - API version information
 
 ## Key Dependencies
 
