@@ -13,10 +13,10 @@ val supabaseAnonKey: String = (project.findProperty("SUPABASE_ANON_KEY") as Stri
   ?: "YOUR_SUPABASE_ANON_KEY"
 val supabaseUrlWithSlash = if (supabaseUrl.endsWith("/")) supabaseUrl else "$supabaseUrl/"
 
-// Debug uses production API for emulator testing
-// For local dev server: use "http://10.0.2.2:3000/api/" (emulator) or your computer's IP (physical device)
+// Debug uses local dev server for emulator testing
+// 10.0.2.2 is the Android emulator's special IP that maps to host's localhost
 // Make sure to run: cd apps/web && npm run dev
-val apiBaseDebug = "https://constructionpro.vercel.app/api/"  // Use production API for emulator testing
+val apiBaseDebug = "http://10.0.2.2:3000/api/"  // Use local dev server for emulator testing
 val apiBaseRelease = "https://constructionpro.vercel.app/api/"
 
 android {

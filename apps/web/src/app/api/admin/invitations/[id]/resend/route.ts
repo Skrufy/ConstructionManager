@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireApiAuthWithRoles } from '@/lib/api-auth'
 import { prisma } from '@/lib/prisma'
+import { sendInvitationEmail } from '@/lib/email'
 import crypto from 'crypto'
 
 export const dynamic = 'force-dynamic'
@@ -61,14 +62,28 @@ export async function POST(
       }
     })
 
-    // TODO: Send invitation email
+    // Send invitation email
+    const emailResult = await sendInvitationEmail({
+      to: updatedInvitation.email,
+      inviterName: updatedInvitation.invitedBy.name || 'An administrator',
+      role: updatedInvitation.role,
+      token: newToken,
+      message: updatedInvitation.message,
+      expiresAt: newExpiresAt,
+    })
+
+    if (!emailResult.success) {
+      console.warn(`[Invitation] Email failed for ${invitation.email}: ${emailResult.error}`)
+    }
+
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     const inviteUrl = `${baseUrl}/auth/accept-invitation?token=${newToken}`
 
-    console.log(`[Invitation] Resent invite for ${invitation.email} - URL: ${inviteUrl}`)
+    console.log(`[Invitation] Resent invite for ${invitation.email} - Email sent: ${emailResult.success}`)
 
     return NextResponse.json({
       success: true,
+      email_sent: emailResult.success,
       invitation: {
         id: updatedInvitation.id,
         email: updatedInvitation.email,

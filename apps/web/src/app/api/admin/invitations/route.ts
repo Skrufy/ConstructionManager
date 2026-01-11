@@ -3,6 +3,7 @@ import { requireApiAuth } from '@/lib/api-auth'
 import { prisma } from '@/lib/prisma'
 import { VALID_ROLES } from '@/lib/permissions'
 import { isOwnerAdmin, getToolAccessLevel } from '@/lib/api-permissions'
+import { sendInvitationEmail } from '@/lib/email'
 import crypto from 'crypto'
 
 export const dynamic = 'force-dynamic'
@@ -198,16 +199,29 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // TODO: Send invitation email
-    // For now, we'll return the token in development for testing
-    // In production, this should send an email with the invite link
+    // Send invitation email
+    const emailResult = await sendInvitationEmail({
+      to: emailLower,
+      inviterName: user.name || 'An administrator',
+      role: assignedRole,
+      token,
+      message,
+      expiresAt,
+    })
+
+    if (!emailResult.success) {
+      console.warn(`[Invitation] Email failed for ${emailLower}: ${emailResult.error}`)
+    }
+
+    // Return invite URL in development for testing
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     const inviteUrl = `${baseUrl}/auth/accept-invitation?token=${token}`
 
-    console.log(`[Invitation] Created invite for ${emailLower} - URL: ${inviteUrl}`)
+    console.log(`[Invitation] Created invite for ${emailLower} - Email sent: ${emailResult.success}`)
 
     return NextResponse.json({
       invitation: transformInvitation(invitation),
+      email_sent: emailResult.success,
       // Only include invite_url in development for testing
       ...(process.env.NODE_ENV !== 'production' && { invite_url: inviteUrl })
     }, { status: 201 })
