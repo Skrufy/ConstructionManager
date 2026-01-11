@@ -16,23 +16,32 @@ class AuthRepository(
   }
 
   /**
-   * Sign in with email and password, returns the full session
+   * Sign in with email and password, returns the session without saving tokens.
+   * Call saveSession() after verifying the user to complete login.
+   * This prevents a race condition where saving tokens triggers navigation
+   * before profile verification completes.
    */
-  suspend fun signIn(email: String, password: String): Result<String> {
+  suspend fun signIn(email: String, password: String): Result<AuthSessionResponse> {
     return try {
       val response = authService.signInWithPassword(request = AuthSignInRequest(email, password))
-      // Save both access and refresh tokens
-      tokenStore.saveTokens(
-        accessToken = response.accessToken,
-        refreshToken = response.refreshToken,
-        expiresIn = response.expiresIn
-      )
-      Result.success(response.accessToken)
+      Result.success(response)
     } catch (exception: HttpException) {
       Result.failure(IllegalStateException(parseError(exception)))
     } catch (exception: Exception) {
       Result.failure(exception)
     }
+  }
+
+  /**
+   * Save session tokens after successful profile verification.
+   * This triggers navigation to the dashboard.
+   */
+  suspend fun saveSession(session: AuthSessionResponse) {
+    tokenStore.saveTokens(
+      accessToken = session.accessToken,
+      refreshToken = session.refreshToken,
+      expiresIn = session.expiresIn
+    )
   }
 
   /**

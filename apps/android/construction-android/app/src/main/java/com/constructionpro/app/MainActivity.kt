@@ -171,9 +171,8 @@ private fun AppRoot(
     if (token.isNullOrBlank()) {
         LoginScreen(
             authRepository = authRepository,
-            apiService = apiService,
             tokenStore = tokenStore,
-            onLoggedIn = { /* Token already saved by authRepository.signIn() */ }
+            onLoggedIn = { /* Navigation handled by token state change */ }
         )
     } else {
         AppNav(apiService = apiService, onLogout = onLogout, themePreferences = themePreferences)

@@ -1,6 +1,7 @@
 package com.constructionpro.app.ui.screens
 
 import android.content.res.Configuration
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -25,19 +26,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.constructionpro.app.BuildConfig
 import com.constructionpro.app.R
-import com.constructionpro.app.data.ApiService
 import com.constructionpro.app.data.AuthRepository
 import com.constructionpro.app.data.AuthTokenStore
 import com.constructionpro.app.ui.components.*
 import com.constructionpro.app.ui.theme.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     authRepository: AuthRepository,
-    apiService: ApiService,
     tokenStore: AuthTokenStore,
     onLoggedIn: () -> Unit
 ) {
@@ -56,20 +60,36 @@ fun LoginScreen(
         error = null
         scope.launch {
             val result = authRepository.signIn(email.trim(), password)
-            result.onSuccess {
-                // Token is now saved by authRepository.signIn()
-                // Verify the user exists in our database by calling profile endpoint
-                try {
-                    apiService.getProfile()
-                    // User exists, proceed to dashboard
+            result.onSuccess { session ->
+                // Verify the user exists in our database BEFORE saving tokens.
+                // This prevents a race condition where saving tokens triggers
+                // navigation before profile verification completes.
+                val profileVerified = withContext(Dispatchers.IO) {
+                    try {
+                        val client = OkHttpClient()
+                        val request = Request.Builder()
+                            .url("${BuildConfig.API_BASE_URL}users/me")
+                            .addHeader("Authorization", "Bearer ${session.accessToken}")
+                            .addHeader("Accept", "application/json")
+                            .build()
+                        val response = client.newCall(request).execute()
+                        val responseBody = response.body?.string()
+                        Log.d("LoginScreen", "Profile verification: ${response.code} - $responseBody")
+                        response.isSuccessful
+                    } catch (e: Exception) {
+                        Log.e("LoginScreen", "Profile verification failed", e)
+                        false
+                    }
+                }
+
+                if (profileVerified) {
+                    // User exists in our database, save session and navigate
+                    authRepository.saveSession(session)
                     isLoading = false
                     onLoggedIn()
-                } catch (e: Exception) {
+                } else {
                     // User authenticated with Supabase but doesn't exist or isn't activated
                     isLoading = false
-                    tokenStore.clearToken()
-                    // Note: Can't use stringResource here since we're in a coroutine scope
-                    // The error will be localized when displayed
                     error = "ACCOUNT_PENDING"
                 }
             }.onFailure { failure ->

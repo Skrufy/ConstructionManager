@@ -14,9 +14,14 @@ const updateProfileSchema = z.object({
 // GET /api/users/me - Get current user profile
 export async function GET(request: NextRequest) {
   try {
+    console.log('[/api/users/me] Starting auth check')
     const authResult = await requireApiAuth(request)
-    if (authResult instanceof NextResponse) return authResult
+    if (authResult instanceof NextResponse) {
+      console.log('[/api/users/me] Auth failed, returning error response')
+      return authResult
+    }
     const { user: authUser } = authResult
+    console.log('[/api/users/me] Auth passed, user:', authUser.id, authUser.email)
 
     const user = await prisma.user.findUnique({
       where: { id: authUser.id },
@@ -33,8 +38,10 @@ export async function GET(request: NextRequest) {
     })
 
     if (!user) {
+      console.log('[/api/users/me] User not found in DB for id:', authUser.id)
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
+    console.log('[/api/users/me] User found:', user.email)
 
     // Return snake_case for iOS compatibility
     return NextResponse.json({
