@@ -1,10 +1,25 @@
 import { Resend } from 'resend'
 
-// Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy-initialize Resend client to avoid build-time errors
+let resendClient: Resend | null = null
 
-const EMAIL_FROM = process.env.EMAIL_FROM || 'Duggin Construction Co <noreply@example.com>'
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+function getResendClient(): Resend | null {
+  if (!process.env.RESEND_API_KEY) {
+    return null
+  }
+  if (!resendClient) {
+    resendClient = new Resend(process.env.RESEND_API_KEY)
+  }
+  return resendClient
+}
+
+function getEmailFrom(): string {
+  return process.env.EMAIL_FROM || 'Duggin Construction Co <noreply@example.com>'
+}
+
+function getAppUrl(): string {
+  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+}
 
 export interface SendEmailOptions {
   to: string | string[]
@@ -26,14 +41,15 @@ export interface SendInvitationEmailOptions {
  * Send a generic email
  */
 export async function sendEmail(options: SendEmailOptions): Promise<{ success: boolean; error?: string }> {
-  if (!process.env.RESEND_API_KEY) {
+  const resend = getResendClient()
+  if (!resend) {
     console.warn('[Email] RESEND_API_KEY not configured, skipping email send')
     return { success: false, error: 'Email service not configured' }
   }
 
   try {
     const { data, error } = await resend.emails.send({
-      from: EMAIL_FROM,
+      from: getEmailFrom(),
       to: options.to,
       subject: options.subject,
       html: options.html,
@@ -57,7 +73,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<{ success: b
  * Send an invitation email to a new user
  */
 export async function sendInvitationEmail(options: SendInvitationEmailOptions): Promise<{ success: boolean; error?: string }> {
-  const inviteUrl = `${APP_URL}/auth/accept-invitation?token=${options.token}`
+  const inviteUrl = `${getAppUrl()}/auth/accept-invitation?token=${options.token}`
   const expiresFormatted = options.expiresAt.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
