@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Building2, Loader2, ArrowLeft, CheckCircle } from 'lucide-react'
+import { Loader2, ArrowLeft, CheckCircle } from 'lucide-react'
 import { createBrowserSupabaseClient } from '@/lib/supabase-client'
 import { useBranding } from '@/hooks/use-branding'
 
@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8 text-center">
           <div>
-            <Link href="/" className="flex items-center justify-center gap-2">
+            <Link href="/" className="flex items-center justify-center gap-3">
               {branding.companyLogo ? (
                 <Image
                   src={branding.companyLogo}
@@ -63,8 +63,14 @@ export default function ForgotPasswordPage() {
                 />
               ) : (
                 <>
-                  <Building2 className="h-10 w-10 text-primary-600" />
-                  <span className="text-2xl font-bold text-gray-900">{branding.companyName}</span>
+                  <Image
+                    src="/icon.png"
+                    alt="Duggin Construction Co"
+                    width={48}
+                    height={48}
+                    className="rounded-lg"
+                  />
+                  <span className="text-2xl font-bold text-gray-900">Duggin Construction Co</span>
                 </>
               )}
             </Link>
@@ -97,7 +103,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <Link href="/" className="flex items-center justify-center gap-2">
+          <Link href="/" className="flex items-center justify-center gap-3">
             {branding.companyLogo ? (
               <Image
                 src={branding.companyLogo}
@@ -108,8 +114,14 @@ export default function ForgotPasswordPage() {
               />
             ) : (
               <>
-                <Building2 className="h-10 w-10 text-primary-600" />
-                <span className="text-2xl font-bold text-gray-900">{branding.companyName}</span>
+                <Image
+                  src="/icon.png"
+                  alt="Duggin Construction Co"
+                  width={48}
+                  height={48}
+                  className="rounded-lg"
+                />
+                <span className="text-2xl font-bold text-gray-900">Duggin Construction Co</span>
               </>
             )}
           </Link>
