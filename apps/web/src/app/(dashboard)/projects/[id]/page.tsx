@@ -227,9 +227,9 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       {/* Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Project Details */}
-        <div className="card p-6">
+        <div className="card p-6 max-h-64 flex flex-col">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Project Details</h2>
-          <dl className="space-y-3">
+          <dl className="space-y-3 overflow-y-auto flex-1">
             {project.description && (
               <div>
                 <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Description</dt>
@@ -252,7 +252,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         </div>
 
         {/* Team Members */}
-        <div className="card p-6">
+        <div className="card p-6 max-h-64 flex flex-col">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Team Members</h2>
             {isAdmin && (
@@ -267,16 +267,16 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           {project.assignments.length === 0 ? (
             <p className="text-sm text-gray-500 dark:text-gray-400">No team members assigned yet</p>
           ) : (
-            <ul className="space-y-3">
+            <ul className="space-y-3 overflow-y-auto flex-1">
               {project.assignments.map((assignment) => (
                 <li key={assignment.id} className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
                     <span className="text-sm font-medium text-primary-600">
                       {assignment.user.name.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{assignment.user.name}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{assignment.user.name}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {(assignment.roleOverride || assignment.user.role).replace('_', ' ')}
                     </p>

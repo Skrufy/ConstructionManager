@@ -132,21 +132,6 @@ const INTEGRATIONS: Array<{
     features: ['Document OCR', 'Metadata Extraction', 'Project Matching'],
   },
   {
-    id: 'procore',
-    name: 'Procore',
-    description: 'Sync with Procore for project management',
-    category: 'Project Management',
-    icon: FileText,
-    color: 'orange',
-    status: 'coming_soon',
-    docs: 'https://developers.procore.com/',
-    envVars: [
-      { key: 'PROCORE_CLIENT_ID', label: 'Client ID', required: true, secret: false },
-      { key: 'PROCORE_CLIENT_SECRET', label: 'Client Secret', required: true, secret: true },
-    ],
-    features: ['Project Sync', 'RFIs', 'Submittals', 'Daily Logs'],
-  },
-  {
     id: 'twilio',
     name: 'Twilio',
     description: 'SMS notifications for alerts and reminders',
@@ -192,21 +177,6 @@ const INTEGRATIONS: Array<{
       { key: 'AWS_S3_REGION', label: 'Region', required: true, secret: false },
     ],
     features: ['File Storage', 'Automatic Backups', 'CDN Delivery'],
-  },
-  {
-    id: 'sendgrid',
-    name: 'SendGrid',
-    description: 'Email notifications and reports delivery',
-    category: 'Communications',
-    icon: MessageSquare,
-    color: 'blue',
-    status: 'coming_soon',
-    docs: 'https://docs.sendgrid.com/',
-    envVars: [
-      { key: 'SENDGRID_API_KEY', label: 'API Key', required: true, secret: true },
-      { key: 'SENDGRID_FROM_EMAIL', label: 'From Email', required: true, secret: false },
-    ],
-    features: ['Email Notifications', 'Report Delivery', 'Daily Digests'],
   },
 ]
 

@@ -168,30 +168,47 @@ export async function GET(request: NextRequest) {
 
       return {
         id: doc.id,
+        // snake_case for mobile
         project_id: doc.projectId,
-        name: doc.name,
-        description: doc.description,
-        category: doc.category,
-        file_url: doc.storagePath,
         storage_path: doc.storagePath,
+        file_url: doc.storagePath,
         file_type: doc.type,
         file_size: doc.fileSize ?? 0,
         uploaded_by: doc.uploadedBy,
         uploaded_at: doc.createdAt?.toISOString() ?? new Date().toISOString(),
         created_at: doc.createdAt?.toISOString() ?? new Date().toISOString(),
         updated_at: doc.createdAt?.toISOString() ?? new Date().toISOString(),
-        tags: Array.isArray(doc.tags) ? doc.tags : [],
         gps_latitude: doc.gpsLatitude,
         gps_longitude: doc.gpsLongitude,
         current_version: doc.currentVersion,
         is_latest: doc.isLatest,
         is_admin_only: doc.isAdminOnly,
+        blaster_assignments: blasterAssignments,
+        revision_count: doc._count?.revisions ?? 0,
+        annotation_count: doc._count?.annotations ?? 0,
+        // camelCase for web frontend
+        projectId: doc.projectId,
+        storagePath: doc.storagePath,
+        type: doc.type,
+        fileSize: doc.fileSize ?? 0,
+        uploadedBy: doc.uploadedBy,
+        createdAt: doc.createdAt?.toISOString() ?? new Date().toISOString(),
+        updatedAt: doc.createdAt?.toISOString() ?? new Date().toISOString(),
+        gpsLatitude: doc.gpsLatitude,
+        gpsLongitude: doc.gpsLongitude,
+        currentVersion: doc.currentVersion,
+        isLatest: doc.isLatest,
+        isAdminOnly: doc.isAdminOnly,
+        blasters: blasterAssignments.map(ba => ba.blaster),
+        // Shared fields (same in both)
+        name: doc.name,
+        description: doc.description,
+        category: doc.category,
+        tags: Array.isArray(doc.tags) ? doc.tags : [],
         project: doc.project ?? null,
         uploader: doc.uploader ?? null,
-        blaster_assignments: blasterAssignments,
         metadata: doc.metadata ?? null,
-        revision_count: doc._count?.revisions ?? 0,
-        annotation_count: doc._count?.annotations ?? 0
+        _count: doc._count ?? { revisions: 0, annotations: 0 }
       }
     })
 
