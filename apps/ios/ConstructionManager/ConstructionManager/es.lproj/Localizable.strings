@@ -366,6 +366,7 @@
 "documents.details" = "Detalles del documento";
 "documents.tags" = "Etiquetas";
 "documents.view" = "Ver documento";
+"documents.count" = "%d documentos";
 
 // MARK: - Drawings
 "drawings.title" = "Planos";

@@ -436,7 +436,6 @@ struct GenerateReportView: View {
     @State private var reportType: ReportType = .project
     @State private var period: ReportPeriod = .thisMonth
     @State private var selectedProject: Project?
-    @State private var showingProjectPicker = false
     @State private var isGenerating = false
     @State private var generatedReport: Report?
     @State private var errorMessage: String?
@@ -481,9 +480,6 @@ struct GenerateReportView: View {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button("Cancel") { dismiss() }
             }
-        }
-        .sheet(isPresented: $showingProjectPicker) {
-            ReportProjectPickerSheet(selectedProject: $selectedProject)
         }
         .onAppear {
             if let type = selectedType {
@@ -562,38 +558,39 @@ struct GenerateReportView: View {
                 .font(AppTypography.heading3)
                 .foregroundColor(AppColors.textPrimary)
 
-            HStack {
-                Button {
-                    showingProjectPicker = true
-                } label: {
-                    HStack {
-                        Text(selectedProject?.name ?? "All Projects")
-                            .font(AppTypography.body)
-                            .foregroundColor(selectedProject != nil ? AppColors.textPrimary : AppColors.textSecondary)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14))
-                            .foregroundColor(AppColors.textTertiary)
+            HStack(spacing: AppSpacing.sm) {
+                Image(systemName: "mappin.and.ellipse")
+                    .font(.system(size: 14))
+                    .foregroundColor(AppColors.primary600)
+
+                Picker("documents.jobsite".localized, selection: Binding(
+                    get: { selectedProject?.id },
+                    set: { newId in
+                        selectedProject = newId.flatMap { id in
+                            ProjectService.shared.projects.first { $0.id == id }
+                        }
                     }
-                    .contentShape(Rectangle())
+                )) {
+                    Text("documents.allJobsites".localized).tag(nil as String?)
+                    ForEach(ProjectService.shared.projects.filter { $0.status == .active }) { project in
+                        Text(project.name).tag(project.id as String?)
+                    }
                 }
-                .buttonStyle(.plain)
+                .pickerStyle(.menu)
+                .tint(AppColors.textPrimary)
+
+                Spacer()
 
                 if selectedProject != nil {
                     Button {
                         selectedProject = nil
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 20))
+                            .font(.system(size: 18))
                             .foregroundColor(AppColors.gray400)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.leading, AppSpacing.xs)
                 }
             }
-            .padding()
-            .background(AppColors.gray100)
-            .cornerRadius(AppSpacing.radiusSmall)
         }
     }
 
@@ -855,50 +852,6 @@ private struct ReportDataRow: View {
         .padding(AppSpacing.md)
         .background(AppColors.cardBackground)
         .cornerRadius(AppSpacing.radiusMedium)
-    }
-}
-
-// MARK: - Report Project Picker
-struct ReportProjectPickerSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @Binding var selectedProject: Project?
-
-    var body: some View {
-        NavigationStack {
-            List {
-                ForEach(ProjectService.shared.projects) { project in
-                    Button(action: {
-                        selectedProject = project
-                        dismiss()
-                    }) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(project.name)
-                                    .font(AppTypography.body)
-                                    .foregroundColor(AppColors.textPrimary)
-                                if !project.address.isEmpty {
-                                    Text(project.address)
-                                        .font(AppTypography.caption)
-                                        .foregroundColor(AppColors.textSecondary)
-                                }
-                            }
-                            Spacer()
-                            if selectedProject?.id == project.id {
-                                Image(systemName: "checkmark")
-                                    .foregroundColor(AppColors.primary600)
-                            }
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Select Project")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
-        }
     }
 }
 

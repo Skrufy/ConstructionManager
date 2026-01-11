@@ -59,6 +59,9 @@ struct DailyLogsView: View {
 
     private var dailyLogsContent: some View {
         VStack(spacing: 0) {
+            // Jobsite Filter (matches Documents page style)
+            jobsiteFilter
+
             if viewModel.isLoading && viewModel.dailyLogs.isEmpty {
                 Spacer()
                 ProgressView()
@@ -103,9 +106,6 @@ struct DailyLogsView: View {
         .background(AppColors.background)
         .navigationTitle("nav.dailyLogs".localized)
         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                projectFilterMenu
-            }
             if canCreateDailyLogs {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingNewLog = true }) {
@@ -127,62 +127,47 @@ struct DailyLogsView: View {
         }
     }
 
-    // MARK: - Project Filter Menu
-    private var projectFilterMenu: some View {
-        Menu {
-            Button(action: {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    selectedProject = nil
-                }
-            }) {
-                HStack {
-                    Label("drawings.allProjects".localized, systemImage: "folder.fill")
-                    if selectedProject == nil {
-                        Image(systemName: "checkmark")
-                    }
-                }
-            }
+    // MARK: - Jobsite Filter (matches Documents page style)
+    private var jobsiteFilter: some View {
+        HStack(spacing: AppSpacing.sm) {
+            Image(systemName: "mappin.and.ellipse")
+                .font(.system(size: 14))
+                .foregroundColor(AppColors.primary600)
 
-            Divider()
-
-            ForEach(ProjectService.shared.projects) { project in
-                Button(action: {
+            Picker("documents.jobsite".localized, selection: Binding(
+                get: { selectedProject?.id },
+                set: { newId in
                     withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedProject = project
-                    }
-                }) {
-                    HStack {
-                        Label {
-                            Text(project.name)
-                        } icon: {
-                            Image(systemName: "building.2.fill")
-                        }
-                        if selectedProject?.id == project.id {
-                            Image(systemName: "checkmark")
+                        selectedProject = newId.flatMap { id in
+                            ProjectService.shared.projects.first { $0.id == id }
                         }
                     }
                 }
+            )) {
+                Text("documents.allJobsites".localized).tag(nil as String?)
+                ForEach(ProjectService.shared.projects.filter { $0.status == .active }) { project in
+                    Text(project.name).tag(project.id as String?)
+                }
             }
-        } label: {
-            HStack(spacing: isIPad ? AppSpacing.sm : AppSpacing.xs) {
-                Image(systemName: selectedProject == nil ? "folder.fill" : "building.2.fill")
-                    .font(.system(size: isIPad ? 18 : 14))
-                    .foregroundColor(AppColors.primary600)
+            .pickerStyle(.menu)
+            .tint(AppColors.textPrimary)
 
-                Text(selectedProject?.name ?? "drawings.allProjects".localized)
-                    .font(isIPad ? AppTypography.bodyLarge : AppTypography.bodySemibold)
-                    .foregroundColor(AppColors.textPrimary)
-                    .lineLimit(1)
+            Spacer()
 
-                Image(systemName: "chevron.down")
-                    .font(.system(size: isIPad ? 12 : 10, weight: .semibold))
-                    .foregroundColor(AppColors.textSecondary)
+            if selectedProject != nil {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedProject = nil
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(AppColors.gray400)
+                }
             }
-            .padding(.horizontal, isIPad ? AppSpacing.lg : AppSpacing.md)
-            .padding(.vertical, isIPad ? AppSpacing.md : AppSpacing.sm)
-            .background(AppColors.gray100)
-            .clipShape(Capsule())
         }
+        .padding(.horizontal, AppSpacing.md)
+        .padding(.vertical, AppSpacing.xs)
     }
 
     private var emptyState: some View {

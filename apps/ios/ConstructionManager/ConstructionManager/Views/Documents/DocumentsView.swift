@@ -44,11 +44,11 @@ struct DocumentsView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                // Jobsite Filter (above search bar like Drawings)
+                jobsiteFilter
+
                 // Search Bar
                 searchBar
-
-                // Jobsite Filter
-                jobsiteFilter
 
                 // Category Filter
                 categoryFilter
@@ -170,6 +170,11 @@ struct DocumentsView: View {
         .padding(.vertical, AppSpacing.sm)
     }
 
+    // Cached filtered count to avoid recalculating in view body
+    private var filteredDocumentsCount: Int {
+        viewModel.filteredDocuments(search: searchText, category: selectedCategory, projectId: selectedProjectId).count
+    }
+
     private var jobsiteFilter: some View {
         HStack(spacing: AppSpacing.sm) {
             Image(systemName: "mappin.and.ellipse")
@@ -186,6 +191,12 @@ struct DocumentsView: View {
             .tint(AppColors.textPrimary)
 
             Spacer()
+
+            // Show count of filtered documents (like Drawings page)
+            Text(String(format: "documents.count".localized, filteredDocumentsCount))
+                .font(AppTypography.caption)
+                .foregroundColor(AppColors.textTertiary)
+                .animation(.none, value: filteredDocumentsCount)
 
             if selectedProjectId != nil {
                 Button {

@@ -213,87 +213,53 @@ struct DrawingsView: View {
         }
     }
 
-    // MARK: - Project Dropdown
+    // MARK: - Project Dropdown (matches Documents page style)
     private var projectDropdown: some View {
-        HStack {
-            Text("projects.title".localized)
-                .font(AppTypography.label)
-                .foregroundColor(AppColors.textSecondary)
+        HStack(spacing: AppSpacing.sm) {
+            Image(systemName: "mappin.and.ellipse")
+                .font(.system(size: 14))
+                .foregroundColor(AppColors.primary600)
 
-            Menu {
-                // All Projects option
-                Button(action: {
+            Picker("drawings.allProjects".localized, selection: Binding(
+                get: { selectedProject?.id },
+                set: { newId in
                     withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedProject = nil
-                    }
-                }) {
-                    HStack {
-                        Label("drawings.allProjects".localized, systemImage: "folder.fill")
-                        if selectedProject == nil {
-                            Image(systemName: "checkmark")
+                        selectedProject = newId.flatMap { id in
+                            projectService.projects.first { $0.id == id }
                         }
                     }
                 }
-
-                Divider()
-
-                // Active projects with drawing counts
+            )) {
+                Text("drawings.allProjects".localized).tag(nil as String?)
                 ForEach(projectService.projects.filter { $0.status == .active }) { project in
-                    let count = viewModel.drawings.filter { $0.projectId == project.id }.count
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedProject = project
-                        }
-                    }) {
-                        HStack {
-                            Label {
-                                HStack {
-                                    Text(project.name)
-                                    if count > 0 {
-                                        Text("(\(count))")
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                            } icon: {
-                                Image(systemName: "building.2.fill")
-                            }
-                            if selectedProject?.id == project.id {
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
+                    Text(project.name).tag(project.id as String?)
                 }
-            } label: {
-                HStack(spacing: AppSpacing.xs) {
-                    Image(systemName: selectedProject == nil ? "folder.fill" : "building.2.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(AppColors.primary600)
-
-                    Text(selectedProject?.name ?? "drawings.allProjects".localized)
-                        .font(AppTypography.bodySemibold)
-                        .foregroundColor(AppColors.textPrimary)
-                        .lineLimit(1)
-
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(AppColors.textSecondary)
-                }
-                .padding(.horizontal, AppSpacing.sm)
-                .padding(.vertical, AppSpacing.xs)
-                .background(AppColors.gray100)
-                .cornerRadius(AppSpacing.radiusMedium)
             }
+            .pickerStyle(.menu)
+            .tint(AppColors.textPrimary)
 
             Spacer()
 
-            // Show count of filtered drawings using cached property
+            // Show count of filtered drawings
             Text(String(format: "drawings.count".localized, filteredDrawingsCount))
                 .font(AppTypography.caption)
                 .foregroundColor(AppColors.textTertiary)
                 .animation(.none, value: filteredDrawingsCount)
+
+            if selectedProject != nil {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedProject = nil
+                    }
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(AppColors.gray400)
+                }
+            }
         }
         .padding(.horizontal, AppSpacing.md)
-        .padding(.vertical, AppSpacing.sm)
+        .padding(.vertical, AppSpacing.xs)
     }
 
     // MARK: - Search and Filter Bar
