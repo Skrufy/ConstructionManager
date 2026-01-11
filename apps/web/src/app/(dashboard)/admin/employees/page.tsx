@@ -91,7 +91,7 @@ export default function EmployeeRosterPage() {
       const res = await fetch(`/api/employees?${params}`)
       if (res.ok) {
         const data = await res.json()
-        setEmployees(data)
+        setEmployees(data.employees || [])
       }
     } catch (error) {
       console.error('Error fetching employees:', error)
