@@ -81,6 +81,7 @@ data class UpdateSettingsRequest(
 @Serializable
 data class CompanySettingsUpdate(
   // Company info
+  val companyName: String? = null,
   val timezone: String? = null,
   val dateFormat: String? = null,
   val currency: String? = null,

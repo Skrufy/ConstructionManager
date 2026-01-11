@@ -31,7 +31,10 @@ private data class PermissionsState(
     val companyTemplates: List<PermissionTemplate> = emptyList(),
     val users: List<UserDetail> = emptyList(),
     val loadingUsers: Boolean = false,
-    val searchQuery: String = ""
+    val searchQuery: String = "",
+    val projects: List<ProjectSummary> = emptyList(),
+    val loadingProjects: Boolean = false,
+    val projectSearchQuery: String = ""
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,6 +46,7 @@ fun PermissionsScreen(
     val scope = rememberCoroutineScope()
     var state by remember { mutableStateOf(PermissionsState(loading = true)) }
     var selectedUser by remember { mutableStateOf<UserDetail?>(null) }
+    var selectedProject by remember { mutableStateOf<ProjectSummary?>(null) }
 
     fun loadTemplates() {
         scope.launch {
@@ -69,15 +73,32 @@ fun PermissionsScreen(
         scope.launch {
             state = state.copy(loadingUsers = true)
             try {
-                val response = withContext(Dispatchers.IO) {
+                val users = withContext(Dispatchers.IO) {
                     apiService.getAdminUsers()
                 }
                 state = state.copy(
                     loadingUsers = false,
-                    users = response.users
+                    users = users
                 )
             } catch (e: Exception) {
                 state = state.copy(loadingUsers = false)
+            }
+        }
+    }
+
+    fun loadProjects() {
+        scope.launch {
+            state = state.copy(loadingProjects = true)
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    apiService.getProjects()
+                }
+                state = state.copy(
+                    loadingProjects = false,
+                    projects = response.projects
+                )
+            } catch (e: Exception) {
+                state = state.copy(loadingProjects = false)
             }
         }
     }
@@ -89,6 +110,13 @@ fun PermissionsScreen(
     LaunchedEffect(state.selectedTab) {
         if (state.selectedTab == 2 && state.users.isEmpty()) {
             loadUsers()
+        }
+        if (state.selectedTab == 3 && state.projects.isEmpty()) {
+            loadProjects()
+            // Also load users for the project access editor
+            if (state.users.isEmpty()) {
+                loadUsers()
+            }
         }
     }
 
@@ -119,7 +147,7 @@ fun PermissionsScreen(
             // Tab Row
             ScrollableTabRow(
                 selectedTabIndex = state.selectedTab,
-                containerColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.surface,
                 edgePadding = AppSpacing.md
             ) {
                 Tab(
@@ -189,7 +217,13 @@ fun PermissionsScreen(
                     onSearchChange = { state = state.copy(searchQuery = it) },
                     onUserClick = { selectedUser = it }
                 )
-                3 -> ProjectAccessTab()
+                3 -> ProjectAccessTab(
+                    projects = state.projects,
+                    loading = state.loadingProjects,
+                    searchQuery = state.projectSearchQuery,
+                    onSearchChange = { state = state.copy(projectSearchQuery = it) },
+                    onProjectClick = { selectedProject = it }
+                )
             }
         }
     }
@@ -202,6 +236,17 @@ fun PermissionsScreen(
             apiService = apiService,
             onDismiss = { selectedUser = null },
             onSuccess = { loadUsers() }
+        )
+    }
+
+    // Project Access Editor Sheet
+    selectedProject?.let { project ->
+        ProjectAccessEditorSheet(
+            project = project,
+            allUsers = state.users,
+            apiService = apiService,
+            onDismiss = { selectedProject = null },
+            onSuccess = { loadProjects() }
         )
     }
 }
@@ -466,31 +511,186 @@ private fun UserAssignmentsTab(
 }
 
 @Composable
-private fun ProjectAccessTab() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(AppSpacing.xl),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.Lock,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = AppColors.gray400
+private fun ProjectAccessTab(
+    projects: List<ProjectSummary>,
+    loading: Boolean,
+    searchQuery: String,
+    onSearchChange: (String) -> Unit,
+    onProjectClick: (ProjectSummary) -> Unit
+) {
+    val filteredProjects = remember(projects, searchQuery) {
+        if (searchQuery.isBlank()) projects
+        else projects.filter {
+            it.name.contains(searchQuery, ignoreCase = true) ||
+            (it.address?.contains(searchQuery, ignoreCase = true) == true)
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Search Bar
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onSearchChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(AppSpacing.md),
+            placeholder = { Text("Search projects...") },
+            leadingIcon = {
+                Icon(Icons.Default.Search, contentDescription = null)
+            },
+            trailingIcon = {
+                if (searchQuery.isNotBlank()) {
+                    IconButton(onClick = { onSearchChange("") }) {
+                        Icon(Icons.Default.Close, contentDescription = "Clear")
+                    }
+                }
+            },
+            singleLine = true
         )
-        Spacer(modifier = Modifier.height(AppSpacing.md))
-        Text(
-            "Project Access",
-            style = AppTypography.heading3,
-            color = AppColors.textPrimary
-        )
-        Text(
-            "Project-level permissions will appear here",
-            style = AppTypography.secondary,
-            color = AppColors.textSecondary
-        )
+
+        when {
+            loading -> {
+                CPLoadingIndicator(message = "Loading projects...")
+            }
+            filteredProjects.isEmpty() -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(AppSpacing.xl),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = if (searchQuery.isBlank()) Icons.Default.FolderOff else Icons.Default.SearchOff,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = AppColors.gray400
+                    )
+                    Spacer(modifier = Modifier.height(AppSpacing.md))
+                    Text(
+                        if (searchQuery.isBlank()) "No projects found" else "No matching projects",
+                        style = AppTypography.heading3,
+                        color = AppColors.textPrimary
+                    )
+                    Text(
+                        if (searchQuery.isBlank()) "Projects will appear here" else "Try adjusting your search",
+                        style = AppTypography.secondary,
+                        color = AppColors.textSecondary
+                    )
+                }
+            }
+            else -> {
+                LazyColumn(
+                    contentPadding = PaddingValues(AppSpacing.md),
+                    verticalArrangement = Arrangement.spacedBy(AppSpacing.sm)
+                ) {
+                    item {
+                        Text(
+                            "Project Access",
+                            style = AppTypography.heading3,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(bottom = AppSpacing.xs)
+                        )
+                        Text(
+                            "Manage which users have access to each project",
+                            style = AppTypography.secondary,
+                            color = AppColors.textSecondary,
+                            modifier = Modifier.padding(bottom = AppSpacing.md)
+                        )
+                    }
+
+                    items(filteredProjects) { project ->
+                        ProjectAccessCard(
+                            project = project,
+                            onClick = { onProjectClick(project) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProjectAccessCard(
+    project: ProjectSummary,
+    onClick: () -> Unit
+) {
+    val teamCount = project.teamCount
+
+    CPCard(onClick = onClick) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(AppSpacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
+        ) {
+            // Project Icon
+            Surface(
+                shape = RoundedCornerShape(AppSpacing.sm),
+                color = Primary600.copy(alpha = 0.1f),
+                modifier = Modifier.size(48.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = Icons.Default.Folder,
+                        contentDescription = null,
+                        tint = Primary600,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            // Project Info
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    project.name,
+                    style = AppTypography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = AppColors.textPrimary
+                )
+                project.address?.let { address ->
+                    Text(
+                        address,
+                        style = AppTypography.caption,
+                        color = AppColors.textSecondary,
+                        maxLines = 1
+                    )
+                }
+            }
+
+            // Team Count Badge
+            Surface(
+                shape = RoundedCornerShape(AppSpacing.xxs),
+                color = if (teamCount > 0) ConstructionGreen.copy(alpha = 0.1f) else AppColors.gray100
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = AppSpacing.sm, vertical = AppSpacing.xxs),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(AppSpacing.xxs)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.People,
+                        contentDescription = null,
+                        tint = if (teamCount > 0) ConstructionGreen else AppColors.gray400,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        "$teamCount",
+                        style = AppTypography.captionMedium,
+                        color = if (teamCount > 0) ConstructionGreen else AppColors.gray400
+                    )
+                }
+            }
+
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = AppColors.gray400,
+                modifier = Modifier.size(20.dp)
+            )
+        }
     }
 }
 
@@ -639,7 +839,7 @@ private fun AssignCompanyTemplateSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Color.White
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
         Column(
             modifier = Modifier
@@ -823,6 +1023,286 @@ private fun TemplateSelectionRow(
                 contentDescription = null,
                 tint = if (isSelected) ConstructionGreen else AppColors.gray300,
                 modifier = Modifier.size(28.dp)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProjectAccessEditorSheet(
+    project: ProjectSummary,
+    allUsers: List<UserDetail>,
+    apiService: ApiService,
+    onDismiss: () -> Unit,
+    onSuccess: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    var isLoading by remember { mutableStateOf(true) }
+    var isSaving by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var projectDetail by remember { mutableStateOf<ProjectDetail?>(null) }
+    var selectedUserIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    // Load project detail to get current team assignments
+    LaunchedEffect(project.id) {
+        isLoading = true
+        try {
+            val response = withContext(Dispatchers.IO) {
+                apiService.getProject(project.id)
+            }
+            projectDetail = response.project
+            selectedUserIds = response.project.assignments
+                ?.mapNotNull { it.user?.id ?: it.userId }
+                ?.toSet() ?: emptySet()
+        } catch (e: Exception) {
+            errorMessage = e.message ?: "Failed to load project details"
+        } finally {
+            isLoading = false
+        }
+    }
+
+    val filteredUsers = remember(allUsers, searchQuery) {
+        if (searchQuery.isBlank()) allUsers
+        else allUsers.filter {
+            it.name.contains(searchQuery, ignoreCase = true) ||
+            it.email.contains(searchQuery, ignoreCase = true)
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.85f)
+                .padding(horizontal = AppSpacing.md)
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        "Project Access",
+                        style = AppTypography.heading2,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        project.name,
+                        style = AppTypography.secondary,
+                        color = AppColors.textSecondary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(AppSpacing.md))
+
+            // Search Bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Search users...") },
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = null)
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotBlank()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(Icons.Default.Close, contentDescription = "Clear")
+                        }
+                    }
+                },
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.height(AppSpacing.sm))
+
+            // Selected count
+            Text(
+                "${selectedUserIds.size} user${if (selectedUserIds.size != 1) "s" else ""} selected",
+                style = AppTypography.caption,
+                color = AppColors.textSecondary
+            )
+
+            Spacer(modifier = Modifier.height(AppSpacing.sm))
+
+            errorMessage?.let { error ->
+                CPErrorBanner(
+                    message = error,
+                    onDismiss = { errorMessage = null }
+                )
+                Spacer(modifier = Modifier.height(AppSpacing.sm))
+            }
+
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                filteredUsers.isEmpty() -> {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Default.SearchOff,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = AppColors.gray400
+                            )
+                            Spacer(modifier = Modifier.height(AppSpacing.sm))
+                            Text(
+                                "No users found",
+                                style = AppTypography.body,
+                                color = AppColors.textSecondary
+                            )
+                        }
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)
+                    ) {
+                        items(filteredUsers) { user ->
+                            val isSelected = selectedUserIds.contains(user.id)
+                            UserAccessRow(
+                                user = user,
+                                isSelected = isSelected,
+                                onClick = {
+                                    selectedUserIds = if (isSelected) {
+                                        selectedUserIds - user.id
+                                    } else {
+                                        selectedUserIds + user.id
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(AppSpacing.md))
+
+            // Save Button
+            CPButton(
+                text = if (isSaving) "Saving..." else "Save Changes",
+                onClick = {
+                    scope.launch {
+                        isSaving = true
+                        errorMessage = null
+                        try {
+                            val detail = projectDetail
+                            if (detail != null) {
+                                withContext(Dispatchers.IO) {
+                                    apiService.updateProject(
+                                        projectId = project.id,
+                                        update = ProjectUpdateRequest(
+                                            name = detail.name,
+                                            address = detail.address,
+                                            description = detail.description,
+                                            status = detail.status,
+                                            assignedUserIds = selectedUserIds.toList()
+                                        )
+                                    )
+                                }
+                                onSuccess()
+                                onDismiss()
+                            }
+                        } catch (e: Exception) {
+                            errorMessage = e.message ?: "Failed to save changes"
+                        } finally {
+                            isSaving = false
+                        }
+                    }
+                },
+                enabled = !isSaving && !isLoading,
+                loading = isSaving,
+                icon = Icons.Default.Check,
+                size = CPButtonSize.Large,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(AppSpacing.xl))
+        }
+    }
+}
+
+@Composable
+private fun UserAccessRow(
+    user: UserDetail,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(AppSpacing.sm),
+        color = if (isSelected) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(AppSpacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
+        ) {
+            CPAvatar(
+                name = user.name,
+                size = 40.dp,
+                backgroundColor = Primary600
+            )
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    user.name,
+                    style = AppTypography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    user.email,
+                    style = AppTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Role Badge
+            Surface(
+                shape = RoundedCornerShape(AppSpacing.xxs),
+                color = Primary600.copy(alpha = 0.1f)
+            ) {
+                Text(
+                    UserRole.displayName(user.role),
+                    style = AppTypography.captionMedium,
+                    color = Primary600,
+                    modifier = Modifier.padding(horizontal = AppSpacing.xs, vertical = 2.dp)
+                )
+            }
+
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = { onClick() },
+                colors = CheckboxDefaults.colors(
+                    checkedColor = ConstructionGreen,
+                    uncheckedColor = AppColors.gray400
+                )
             )
         }
     }

@@ -384,6 +384,20 @@
     <string name="reports_export">Exportar</string>
     <string name="reports_type">Tipo de Reporte</string>
     <string name="reports_period">Período</string>
+    <string name="reports_generated_count">%d generados</string>
+    <string name="reports_quick_reports">Reportes Rápidos</string>
+    <string name="reports_project_summary">Resumen de Proyecto</string>
+    <string name="reports_labor_report">Reporte de Trabajo</string>
+    <string name="reports_daily_logs">Bitácoras Diarias</string>
+    <string name="reports_weather_delays">Retrasos por Clima</string>
+    <string name="reports_generated_reports">Reportes Generados</string>
+    <string name="reports_loading">Cargando reportes…</string>
+    <string name="reports_empty_title">Sin Reportes</string>
+    <string name="reports_empty_desc">Genera tu primer reporte con el botón +</string>
+    <string name="reports_time_period">Período de Tiempo</string>
+    <string name="reports_format">Formato</string>
+    <string name="reports_generating">Generando…</string>
+    <string name="reports_download">Descargar</string>
 
     <!-- Settings -->
     <string name="settings_title">Configuración</string>

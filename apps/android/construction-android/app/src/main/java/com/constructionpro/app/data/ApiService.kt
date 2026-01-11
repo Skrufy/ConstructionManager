@@ -646,15 +646,12 @@ interface ApiService {
 
   // ============ ADMIN - USER MANAGEMENT ============
 
-  @GET("admin/users")
+  @GET("users")
   suspend fun getAdminUsers(
     @Query("search") search: String? = null,
     @Query("role") role: String? = null,
-    @Query("status") status: String? = null,
-    @Query("teamId") teamId: String? = null,
-    @Query("page") page: Int? = null,
-    @Query("limit") limit: Int? = null
-  ): UserListResponse
+    @Query("status") status: String? = null
+  ): List<UserDetail>
 
   @GET("users/{id}")
   suspend fun getAdminUserDetail(@Path("id") userId: String): UserDetail

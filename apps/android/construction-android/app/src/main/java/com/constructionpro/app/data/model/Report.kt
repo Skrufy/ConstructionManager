@@ -11,16 +11,18 @@ object ReportType {
     const val SAFETY = "SAFETY"
     const val DAILY_LOG = "DAILY_LOG"
     const val EQUIPMENT = "EQUIPMENT"
+    const val WEATHER_DELAY = "WEATHER_DELAY"
 
-    val all = listOf(PROJECT_SUMMARY, FINANCIAL, LABOR, SAFETY, DAILY_LOG, EQUIPMENT)
+    val all = listOf(DAILY_LOG, WEATHER_DELAY, PROJECT_SUMMARY, LABOR, SAFETY, FINANCIAL, EQUIPMENT)
 
     fun displayName(type: String): String = when (type) {
         PROJECT_SUMMARY -> "Project Summary"
         FINANCIAL -> "Financial Report"
         LABOR -> "Labor Report"
         SAFETY -> "Safety Report"
-        DAILY_LOG -> "Daily Log Report"
+        DAILY_LOG -> "Daily Logs"
         EQUIPMENT -> "Equipment Report"
+        WEATHER_DELAY -> "Weather Delays"
         else -> type.replace("_", " ")
     }
 }

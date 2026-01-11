@@ -34,7 +34,7 @@ private data class ClientFormState(
     val website: String = "",
     val industry: String? = null,
     val notes: String = "",
-    val status: String = ClientStatus.PROSPECT,
+    val status: String = ClientStatus.ACTIVE,
     val saving: Boolean = false,
     val error: String? = null,
     val errorResId: Int? = null,
@@ -81,9 +81,10 @@ fun ClientCreateScreen(
                 }
                 onCreated(response.id)
             } catch (e: Exception) {
-                // Simulate successful creation with mock ID when API fails
-                val mockId = "client-${System.currentTimeMillis()}"
-                onCreated(mockId)
+                state = state.copy(
+                    saving = false,
+                    error = e.message ?: "Failed to create client"
+                )
             }
         }
     }
@@ -177,14 +178,8 @@ fun ClientCreateScreen(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)
+                        horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
                     ) {
-                        FilterChip(
-                            selected = state.status == ClientStatus.PROSPECT,
-                            onClick = { state = state.copy(status = ClientStatus.PROSPECT) },
-                            label = { Text(stringResource(R.string.clients_status_prospect)) },
-                            modifier = Modifier.weight(1f)
-                        )
                         FilterChip(
                             selected = state.status == ClientStatus.ACTIVE,
                             onClick = { state = state.copy(status = ClientStatus.ACTIVE) },

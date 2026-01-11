@@ -71,14 +71,14 @@ fun UserManagementScreen(
         scope.launch {
             state = state.copy(loading = true, error = null)
             try {
-                val response = withContext(Dispatchers.IO) {
+                val users = withContext(Dispatchers.IO) {
                     apiService.getAdminUsers(
                         search = state.searchQuery.ifBlank { null },
                         role = state.filterRole,
                         status = state.filterStatus
                     )
                 }
-                state = state.copy(loading = false, users = response.users)
+                state = state.copy(loading = false, users = users)
             } catch (e: Exception) {
                 state = state.copy(
                     loading = false,
@@ -209,8 +209,7 @@ fun UserManagementScreen(
                                 )
                             }
                         } else {
-                            val pendingCount = state.invitations.count { it.status == "PENDING" }
-                            Text("Invitations ($pendingCount)")
+                            Text("Invitations (${state.invitations.size})")
                         }
                     }
                 )

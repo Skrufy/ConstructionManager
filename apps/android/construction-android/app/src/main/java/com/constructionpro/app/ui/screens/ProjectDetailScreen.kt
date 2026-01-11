@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,6 +41,7 @@ import com.constructionpro.app.data.local.PrefetchDrawingsWorker
 import com.constructionpro.app.data.local.toEntity
 import com.constructionpro.app.data.model.CompanySettings
 import com.constructionpro.app.data.model.ProjectDetail
+import com.constructionpro.app.data.model.ProjectUpdateRequest
 import com.constructionpro.app.ui.components.*
 import com.constructionpro.app.ui.theme.*
 import kotlinx.coroutines.Dispatchers
@@ -60,6 +62,16 @@ import kotlin.math.roundToInt
 private data class ProjectDetailState(
     val loading: Boolean = false,
     val project: ProjectDetail? = null,
+    val error: String? = null
+)
+
+private data class ProjectTeamState(
+    val showDialog: Boolean = false,
+    val loading: Boolean = false,
+    val allUsers: List<com.constructionpro.app.data.model.UserSummary> = emptyList(),
+    val selectedUserIds: Set<String> = emptySet(),
+    val visibilityMode: String = "ASSIGNED_ONLY",
+    val saving: Boolean = false,
     val error: String? = null
 )
 
@@ -101,6 +113,7 @@ fun ProjectDetailScreen(
     var state by remember { mutableStateOf(ProjectDetailState(loading = true)) }
     var isAdmin by remember { mutableStateOf(false) }
     var companySettings by remember { mutableStateOf<CompanySettings?>(null) }
+    var teamState by remember { mutableStateOf(ProjectTeamState()) }
     var drawingIds by remember { mutableStateOf<List<String>>(emptyList()) }
     var prefetchStatus by remember { mutableStateOf(PrefetchStatus(loading = true)) }
     var prefetchError by remember { mutableStateOf<String?>(null) }
@@ -227,6 +240,66 @@ fun ProjectDetailScreen(
         }
     }
 
+    fun openTeamManagement() {
+        // Get currently assigned user IDs
+        val currentAssignedIds = state.project?.assignments
+            ?.mapNotNull { it.user?.id }
+            ?.toSet() ?: emptySet()
+
+        teamState = teamState.copy(
+            showDialog = true,
+            loading = true,
+            selectedUserIds = currentAssignedIds,
+            visibilityMode = state.project?.visibilityMode ?: "ASSIGNED_ONLY",
+            error = null
+        )
+
+        scope.launch {
+            try {
+                val users = withContext(Dispatchers.IO) { apiService.getUsers(status = "ACTIVE") }
+                teamState = teamState.copy(loading = false, allUsers = users)
+            } catch (e: Exception) {
+                teamState = teamState.copy(
+                    loading = false,
+                    error = e.message ?: "Failed to load users"
+                )
+            }
+        }
+    }
+
+    fun toggleUserSelection(userId: String) {
+        val newSelection = if (teamState.selectedUserIds.contains(userId)) {
+            teamState.selectedUserIds - userId
+        } else {
+            teamState.selectedUserIds + userId
+        }
+        teamState = teamState.copy(selectedUserIds = newSelection)
+    }
+
+    fun saveTeamAssignments() {
+        scope.launch {
+            teamState = teamState.copy(saving = true, error = null)
+            try {
+                val currentProject = state.project ?: return@launch
+                val updateRequest = ProjectUpdateRequest(
+                    name = currentProject.name,
+                    assignedUserIds = teamState.selectedUserIds.toList(),
+                    visibilityMode = teamState.visibilityMode
+                )
+                val response = withContext(Dispatchers.IO) {
+                    apiService.updateProject(projectId, updateRequest)
+                }
+                state = state.copy(project = response.project)
+                teamState = teamState.copy(showDialog = false, saving = false)
+            } catch (e: Exception) {
+                teamState = teamState.copy(
+                    saving = false,
+                    error = e.message ?: "Failed to save team"
+                )
+            }
+        }
+    }
+
     fun prefetchDrawings() {
         val input = Data.Builder()
             .putString(PrefetchDrawingsWorker.KEY_PROJECT_ID, projectId)
@@ -266,6 +339,17 @@ fun ProjectDetailScreen(
             refreshPrefetchCounts()
             kotlinx.coroutines.delay(2000)
         }
+    }
+
+    // Team Management Dialog
+    if (teamState.showDialog) {
+        TeamManagementDialog(
+            state = teamState,
+            onDismiss = { teamState = teamState.copy(showDialog = false) },
+            onToggleUser = { toggleUserSelection(it) },
+            onVisibilityChange = { teamState = teamState.copy(visibilityMode = it) },
+            onSave = { saveTeamAssignments() }
+        )
     }
 
     Scaffold(
@@ -412,14 +496,59 @@ fun ProjectDetailScreen(
                         ProjectInfoCard(project)
                     }
 
-                    // Team Section (if assignments exist)
+                    // Team Section
                     val assignments = project.assignments ?: emptyList()
-                    if (assignments.isNotEmpty()) {
-                        item {
-                            CPSectionHeader(title = "Team (${assignments.size})")
-                        }
-                        item {
+                    item {
+                        CPSectionHeader(
+                            title = "Team (${assignments.size})",
+                            action = if (isAdmin) {
+                                {
+                                    TextButton(onClick = { openTeamManagement() }) {
+                                        Icon(
+                                            imageVector = Icons.Default.PersonAdd,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Manage")
+                                    }
+                                }
+                            } else null
+                        )
+                    }
+                    item {
+                        if (assignments.isNotEmpty()) {
                             TeamCard(assignments)
+                        } else {
+                            CPCard {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(AppSpacing.md),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.GroupAdd,
+                                        contentDescription = null,
+                                        tint = AppColors.textSecondary,
+                                        modifier = Modifier.size(48.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(AppSpacing.sm))
+                                    Text(
+                                        text = "No team members assigned",
+                                        style = AppTypography.body,
+                                        color = AppColors.textSecondary
+                                    )
+                                    if (isAdmin) {
+                                        Spacer(modifier = Modifier.height(AppSpacing.sm))
+                                        CPButton(
+                                            text = "Add Team Members",
+                                            onClick = { openTeamManagement() },
+                                            size = CPButtonSize.Small
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -843,10 +972,16 @@ private fun ProjectInfoCard(project: ProjectDetail) {
                         style = AppTypography.caption,
                         color = AppColors.textSecondary
                     )
+                    val displayText = when (visibility) {
+                        "ALL" -> "All Users"
+                        "ASSIGNED_ONLY" -> "Assigned Only"
+                        else -> visibility.replace("_", " ")
+                    }
+                    val isLimited = visibility == "ASSIGNED_ONLY"
                     CPBadge(
-                        text = visibility.replace("_", " "),
-                        color = if (visibility == "PUBLIC") Success600 else Primary600,
-                        backgroundColor = if (visibility == "PUBLIC") Success100 else Primary100
+                        text = displayText,
+                        color = if (isLimited) Warning600 else Success600,
+                        backgroundColor = if (isLimited) Warning100 else Success100
                     )
                 }
             }
@@ -986,4 +1121,154 @@ private fun shouldQueueOffline(error: Exception): Boolean {
         is HttpException -> error.code() >= 500
         else -> false
     }
+}
+
+@Composable
+private fun TeamManagementDialog(
+    state: ProjectTeamState,
+    onDismiss: () -> Unit,
+    onToggleUser: (String) -> Unit,
+    onVisibilityChange: (String) -> Unit,
+    onSave: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Manage Team",
+                style = AppTypography.heading2,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 450.dp)
+            ) {
+                if (state.loading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else if (state.error != null) {
+                    Text(
+                        text = state.error,
+                        color = ConstructionRed,
+                        style = AppTypography.body
+                    )
+                } else {
+                    // Visibility Mode Toggle
+                    Text(
+                        text = "Project Visibility",
+                        style = AppTypography.bodySemibold,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(AppSpacing.xs))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)
+                    ) {
+                        FilterChip(
+                            selected = state.visibilityMode == "ASSIGNED_ONLY",
+                            onClick = { onVisibilityChange("ASSIGNED_ONLY") },
+                            label = { Text("Assigned Only") },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FilterChip(
+                            selected = state.visibilityMode == "ALL",
+                            onClick = { onVisibilityChange("ALL") },
+                            label = { Text("All Users") },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(AppSpacing.md))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(AppSpacing.md))
+
+                    Text(
+                        text = "Team Members (${state.selectedUserIds.size} selected)",
+                        style = AppTypography.bodySemibold,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(AppSpacing.sm))
+
+                    androidx.compose.foundation.lazy.LazyColumn(
+                        modifier = Modifier.weight(1f, fill = false),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(state.allUsers.size) { index ->
+                            val user = state.allUsers[index]
+                            val isSelected = state.selectedUserIds.contains(user.id)
+
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(AppSpacing.xs),
+                                color = if (isSelected) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent,
+                                onClick = { onToggleUser(user.id) }
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(AppSpacing.sm),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = isSelected,
+                                        onCheckedChange = { onToggleUser(user.id) }
+                                    )
+                                    Spacer(modifier = Modifier.width(AppSpacing.sm))
+                                    CPAvatar(name = user.name, size = 36.dp)
+                                    Spacer(modifier = Modifier.width(AppSpacing.sm))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = user.name,
+                                            style = AppTypography.bodySemibold,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        user.role?.let { role ->
+                                            Text(
+                                                text = role.replace("_", " "),
+                                                style = AppTypography.secondary,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onSave,
+                enabled = !state.saving && !state.loading
+            ) {
+                if (state.saving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }

@@ -2,14 +2,18 @@ package com.constructionpro.app.data.model
 
 import kotlinx.serialization.Serializable
 
-// Search result types
+// Search result types - must match API response (uppercase with underscores)
 object SearchResultType {
-    const val PROJECT = "project"
-    const val DAILY_LOG = "daily-log"
-    const val DOCUMENT = "document"
-    const val CLIENT = "client"
-    const val WARNING = "warning"
-    const val USER = "user"
+    const val PROJECT = "PROJECT"
+    const val DAILY_LOG = "DAILY_LOG"
+    const val DOCUMENT = "DOCUMENT"
+    const val CLIENT = "CLIENT"
+    const val WARNING = "WARNING"
+    const val USER = "USER"
+    const val TASK = "TASK"
+    const val SUBCONTRACTOR = "SUBCONTRACTOR"
+    const val RFI = "RFI"
+    const val EMPLOYEE = "EMPLOYEE"
 }
 
 @Serializable

@@ -128,8 +128,8 @@ data class PermissionTemplate(
     val name: String,
     val description: String? = null,
     val scope: String, // "project" or "company"
-    @SerialName("tool_permissions") val toolPermissions: Map<String, String> = emptyMap(),
-    @SerialName("granular_permissions") val granularPermissions: Map<String, Boolean> = emptyMap(),
+    @SerialName("tool_permissions") val toolPermissions: kotlinx.serialization.json.JsonObject? = null,
+    @SerialName("granular_permissions") val granularPermissions: kotlinx.serialization.json.JsonObject? = null,
     @SerialName("is_system_default") val isSystemDefault: Boolean = false,
     @SerialName("is_protected") val isProtected: Boolean = false,
     @SerialName("sort_order") val sortOrder: Int = 0,

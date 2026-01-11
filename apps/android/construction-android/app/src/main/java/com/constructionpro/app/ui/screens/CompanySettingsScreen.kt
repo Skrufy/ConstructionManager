@@ -74,30 +74,17 @@ fun CompanySettingsScreen(
         scope.launch {
             state = state.copy(loading = true, error = null)
             try {
-                val companyProfile = withContext(Dispatchers.IO) {
-                    try { apiService.getCompanyProfile() } catch (_: Exception) { null }
-                }
                 val settingsResponse = withContext(Dispatchers.IO) {
                     apiService.getSettings()
                 }
                 state = state.copy(
                     loading = false,
-                    company = companyProfile,
                     settings = settingsResponse.company
                 )
-                // Populate edit form
-                companyProfile?.let { company ->
+                // Populate edit form with company name from settings
+                settingsResponse.company?.let { settings ->
                     editForm = CompanyProfileEditForm(
-                        name = company.name,
-                        address = company.address ?: "",
-                        city = company.city ?: "",
-                        state = company.state ?: "",
-                        zip = company.zip ?: "",
-                        phone = company.phone ?: "",
-                        email = company.email ?: "",
-                        website = company.website ?: "",
-                        taxId = company.taxId ?: "",
-                        licenseNumber = company.licenseNumber ?: ""
+                        name = settings.companyName ?: ""
                     )
                 }
             } catch (e: Exception) {
@@ -110,31 +97,26 @@ fun CompanySettingsScreen(
         scope.launch {
             state = state.copy(saving = true, error = null)
             try {
-                val request = UpdateCompanyProfileRequest(
-                    name = editForm.name.ifBlank { null },
-                    address = editForm.address.ifBlank { null },
-                    city = editForm.city.ifBlank { null },
-                    state = editForm.state.ifBlank { null },
-                    zip = editForm.zip.ifBlank { null },
-                    phone = editForm.phone.ifBlank { null },
-                    email = editForm.email.ifBlank { null },
-                    website = editForm.website.ifBlank { null },
-                    taxId = editForm.taxId.ifBlank { null },
-                    licenseNumber = editForm.licenseNumber.ifBlank { null }
+                val request = UpdateSettingsRequest(
+                    type = "company",
+                    settings = CompanySettingsUpdate(
+                        companyName = editForm.name.ifBlank { null }
+                    )
                 )
-                val updatedCompany = withContext(Dispatchers.IO) {
-                    apiService.updateCompanyProfile(request)
+                withContext(Dispatchers.IO) {
+                    apiService.updateSettings(request)
                 }
+                // Reload to get updated settings
+                loadData()
                 state = state.copy(
                     saving = false,
-                    company = updatedCompany,
                     isEditingProfile = false,
-                    actionSuccess = "Company profile updated"
+                    actionSuccess = "Company name updated"
                 )
             } catch (e: Exception) {
                 state = state.copy(
                     saving = false,
-                    error = e.message ?: "Failed to update profile"
+                    error = e.message ?: "Failed to update company"
                 )
             }
         }

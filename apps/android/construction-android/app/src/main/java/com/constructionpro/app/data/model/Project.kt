@@ -19,14 +19,23 @@ data class ProjectSummary(
   val status: String? = null,
   val address: String? = null,
   val client: ClientSummary? = null,
-  @SerialName("_count") val count: ProjectCount? = null
-)
+  @SerialName("_count") val rawCount: ProjectCount? = null,
+  // Flat fields returned by API
+  @SerialName("crew_count") val crewCount: Int? = null,
+  @SerialName("daily_log_count") val dailyLogCount: Int? = null,
+  @SerialName("document_count") val documentCount: Int? = null,
+  @SerialName("drawing_count") val drawingCount: Int? = null
+) {
+  // Helper to get team count from either flat field or nested count
+  val teamCount: Int
+    get() = crewCount ?: rawCount?.assignments ?: 0
+}
 
 @Serializable
 data class ClientSummary(
   val id: String? = null,
-  val companyName: String? = null,
-  val contactName: String? = null
+  @SerialName("company_name") val companyName: String? = null,
+  @SerialName("contact_name") val contactName: String? = null
 )
 
 @Serializable
@@ -49,13 +58,27 @@ data class ProjectDetail(
   val status: String? = null,
   val address: String? = null,
   val description: String? = null,
-  val startDate: String? = null,
-  val endDate: String? = null,
-  val visibilityMode: String? = null,
+  @SerialName("start_date") val startDate: String? = null,
+  @SerialName("end_date") val endDate: String? = null,
+  @SerialName("visibility_mode") val visibilityMode: String? = null,
   val client: ClientSummary? = null,
   val assignments: List<ProjectAssignment>? = null,
-  @SerialName("_count") val count: ProjectCount? = null
-)
+  // Counts are returned as flat snake_case fields from API
+  @SerialName("daily_log_count") val dailyLogCount: Int? = null,
+  @SerialName("document_count") val documentCount: Int? = null,
+  @SerialName("drawing_count") val drawingCount: Int? = null,
+  @SerialName("crew_count") val crewCount: Int? = null,
+  @SerialName("hours_tracked") val hoursTracked: Int? = null
+) {
+  // Helper to provide backward-compatible count access
+  val count: ProjectCount?
+    get() = ProjectCount(
+      assignments = crewCount,
+      dailyLogs = dailyLogCount,
+      timeEntries = hoursTracked,
+      files = (documentCount ?: 0) + (drawingCount ?: 0)
+    )
+}
 
 @Serializable
 data class ProjectAssignment(

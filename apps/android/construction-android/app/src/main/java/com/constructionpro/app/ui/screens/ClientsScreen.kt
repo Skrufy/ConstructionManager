@@ -207,66 +207,25 @@ private fun ClientStatusFilterChips(
     selected: String?,
     onSelected: (String?) -> Unit
 ) {
-    val configuration = LocalConfiguration.current
-    val isNarrow = configuration.screenWidthDp < 360
-
-    if (isNarrow) {
-        Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
-                FilterChip(
-                    selected = selected == null,
-                    onClick = { onSelected(null) },
-                    label = { Text("All") },
-                    modifier = Modifier.weight(1f)
-                )
-                FilterChip(
-                    selected = selected == ClientStatus.ACTIVE,
-                    onClick = { onSelected(ClientStatus.ACTIVE) },
-                    label = { Text("Active") },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
-                FilterChip(
-                    selected = selected == ClientStatus.PROSPECT,
-                    onClick = { onSelected(ClientStatus.PROSPECT) },
-                    label = { Text("Prospect") },
-                    modifier = Modifier.weight(1f)
-                )
-                FilterChip(
-                    selected = selected == ClientStatus.INACTIVE,
-                    onClick = { onSelected(ClientStatus.INACTIVE) },
-                    label = { Text("Inactive") },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-    } else {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)
-        ) {
-            FilterChip(
-                selected = selected == null,
-                onClick = { onSelected(null) },
-                label = { Text("All") }
-            )
-            FilterChip(
-                selected = selected == ClientStatus.ACTIVE,
-                onClick = { onSelected(ClientStatus.ACTIVE) },
-                label = { Text("Active") }
-            )
-            FilterChip(
-                selected = selected == ClientStatus.PROSPECT,
-                onClick = { onSelected(ClientStatus.PROSPECT) },
-                label = { Text("Prospect") }
-            )
-            FilterChip(
-                selected = selected == ClientStatus.INACTIVE,
-                onClick = { onSelected(ClientStatus.INACTIVE) },
-                label = { Text("Inactive") }
-            )
-        }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)
+    ) {
+        FilterChip(
+            selected = selected == null,
+            onClick = { onSelected(null) },
+            label = { Text("All") }
+        )
+        FilterChip(
+            selected = selected == ClientStatus.ACTIVE,
+            onClick = { onSelected(ClientStatus.ACTIVE) },
+            label = { Text("Active") }
+        )
+        FilterChip(
+            selected = selected == ClientStatus.INACTIVE,
+            onClick = { onSelected(ClientStatus.INACTIVE) },
+            label = { Text("Inactive") }
+        )
     }
 }
 

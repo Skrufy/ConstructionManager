@@ -182,9 +182,11 @@ fun SearchScreen(
                     val clients = response.clients ?: allResults.filter { it.type == SearchResultType.CLIENT }
                     val warnings = response.warnings ?: allResults.filter { it.type == SearchResultType.WARNING }
                     val users = allResults.filter { it.type == SearchResultType.USER }
+                    val tasks = allResults.filter { it.type == SearchResultType.TASK }
+                    val subcontractors = allResults.filter { it.type == SearchResultType.SUBCONTRACTOR }
 
                     val totalCount = projects.size + dailyLogs.size + documents.size +
-                            clients.size + warnings.size + users.size
+                            clients.size + warnings.size + users.size + tasks.size + subcontractors.size
 
                     if (totalCount == 0) {
                         item {
@@ -303,6 +305,40 @@ fun SearchScreen(
                                     result = result,
                                     type = SearchResultType.WARNING,
                                     onClick = { onOpenWarning(result.id) }
+                                )
+                            }
+                        }
+
+                        // Tasks
+                        if (tasks.isNotEmpty()) {
+                            item {
+                                SectionHeader(
+                                    title = "Tasks",
+                                    count = tasks.size
+                                )
+                            }
+                            items(tasks) { result ->
+                                SearchResultCard(
+                                    result = result,
+                                    type = SearchResultType.TASK,
+                                    onClick = { /* Tasks not clickable for now */ }
+                                )
+                            }
+                        }
+
+                        // Subcontractors
+                        if (subcontractors.isNotEmpty()) {
+                            item {
+                                SectionHeader(
+                                    title = "Subcontractors",
+                                    count = subcontractors.size
+                                )
+                            }
+                            items(subcontractors) { result ->
+                                SearchResultCard(
+                                    result = result,
+                                    type = SearchResultType.SUBCONTRACTOR,
+                                    onClick = { /* Subcontractors not clickable for now */ }
                                 )
                             }
                         }
@@ -436,6 +472,8 @@ private fun getTypeIcon(type: String) = when (type) {
     SearchResultType.CLIENT -> Icons.Default.Business
     SearchResultType.WARNING -> Icons.Default.Warning
     SearchResultType.USER -> Icons.Default.Person
+    SearchResultType.TASK -> Icons.Default.CheckCircle
+    SearchResultType.SUBCONTRACTOR -> Icons.Default.Engineering
     else -> Icons.Default.Article
 }
 
@@ -447,6 +485,8 @@ private fun getTypeColor(type: String) = when (type) {
     SearchResultType.CLIENT -> Primary600
     SearchResultType.WARNING -> Error600
     SearchResultType.USER -> Primary600
+    SearchResultType.TASK -> Success600
+    SearchResultType.SUBCONTRACTOR -> Primary600
     else -> Primary600
 }
 
@@ -458,5 +498,7 @@ private fun getTypeBackground(type: String) = when (type) {
     SearchResultType.CLIENT -> Primary100
     SearchResultType.WARNING -> Error100
     SearchResultType.USER -> Primary100
+    SearchResultType.TASK -> Success100
+    SearchResultType.SUBCONTRACTOR -> Primary100
     else -> Primary100
 }

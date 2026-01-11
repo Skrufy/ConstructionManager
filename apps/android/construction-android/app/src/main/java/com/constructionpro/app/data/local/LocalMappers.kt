@@ -39,7 +39,7 @@ fun ProjectEntity.toSummary(): ProjectSummary {
     status = status,
     address = address,
     client = clientName?.let { ClientSummary(companyName = it) },
-    count = ProjectCount()
+    rawCount = ProjectCount()
   )
 }
 

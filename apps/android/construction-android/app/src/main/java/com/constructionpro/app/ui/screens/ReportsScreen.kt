@@ -183,19 +183,19 @@ fun ReportsScreen(
                         if (isNarrow) {
                             Column(verticalArrangement = Arrangement.spacedBy(AppSpacing.xs)) {
                                 QuickReportButton(
-                                    title = stringResource(R.string.reports_project_summary),
-                                    icon = Icons.Default.Folder,
+                                    title = stringResource(R.string.reports_daily_logs),
+                                    icon = Icons.Default.DateRange,
                                     onClick = {
-                                        formState = GenerateFormState(type = ReportType.PROJECT_SUMMARY)
+                                        formState = GenerateFormState(type = ReportType.DAILY_LOG)
                                         state = state.copy(showGenerateDialog = true)
                                     },
                                     modifier = Modifier.fillMaxWidth()
                                 )
                                 QuickReportButton(
-                                    title = stringResource(R.string.reports_labor_report),
-                                    icon = Icons.Default.People,
+                                    title = stringResource(R.string.reports_weather_delays),
+                                    icon = Icons.Default.Cloud,
                                     onClick = {
-                                        formState = GenerateFormState(type = ReportType.LABOR)
+                                        formState = GenerateFormState(type = ReportType.WEATHER_DELAY)
                                         state = state.copy(showGenerateDialog = true)
                                     },
                                     modifier = Modifier.fillMaxWidth()
@@ -207,19 +207,19 @@ fun ReportsScreen(
                                 horizontalArrangement = Arrangement.spacedBy(AppSpacing.xs)
                             ) {
                                 QuickReportButton(
-                                    title = stringResource(R.string.reports_project_summary),
-                                    icon = Icons.Default.Folder,
+                                    title = stringResource(R.string.reports_daily_logs),
+                                    icon = Icons.Default.DateRange,
                                     onClick = {
-                                        formState = GenerateFormState(type = ReportType.PROJECT_SUMMARY)
+                                        formState = GenerateFormState(type = ReportType.DAILY_LOG)
                                         state = state.copy(showGenerateDialog = true)
                                     },
                                     modifier = Modifier.weight(1f)
                                 )
                                 QuickReportButton(
-                                    title = stringResource(R.string.reports_labor_report),
-                                    icon = Icons.Default.People,
+                                    title = stringResource(R.string.reports_weather_delays),
+                                    icon = Icons.Default.Cloud,
                                     onClick = {
-                                        formState = GenerateFormState(type = ReportType.LABOR)
+                                        formState = GenerateFormState(type = ReportType.WEATHER_DELAY)
                                         state = state.copy(showGenerateDialog = true)
                                     },
                                     modifier = Modifier.weight(1f)
@@ -672,6 +672,7 @@ private fun getReportIcon(type: String) = when (type) {
     ReportType.SAFETY -> Icons.Default.HealthAndSafety
     ReportType.DAILY_LOG -> Icons.Default.DateRange
     ReportType.EQUIPMENT -> Icons.Default.Construction
+    ReportType.WEATHER_DELAY -> Icons.Default.Cloud
     else -> Icons.Default.Assessment
 }
 

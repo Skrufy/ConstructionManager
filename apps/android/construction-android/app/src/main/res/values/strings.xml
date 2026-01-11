@@ -388,6 +388,8 @@
     <string name="reports_quick_reports">Quick Reports</string>
     <string name="reports_project_summary">Project Summary</string>
     <string name="reports_labor_report">Labor Report</string>
+    <string name="reports_daily_logs">Daily Logs</string>
+    <string name="reports_weather_delays">Weather Delays</string>
     <string name="reports_generated_reports">Generated Reports</string>
     <string name="reports_loading">Loading reports…</string>
     <string name="reports_empty_title">No Reports Yet</string>

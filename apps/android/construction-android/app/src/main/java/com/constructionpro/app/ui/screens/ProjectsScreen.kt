@@ -290,28 +290,26 @@ private fun ProjectCard(
             }
         }
 
-        // Stats Row
-        project.count?.let { count ->
-            Spacer(modifier = Modifier.height(AppSpacing.sm))
-            CPDivider()
-            Spacer(modifier = Modifier.height(AppSpacing.xs))
+        // Stats Row - use flat fields from API response
+        Spacer(modifier = Modifier.height(AppSpacing.sm))
+        CPDivider()
+        Spacer(modifier = Modifier.height(AppSpacing.xs))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            ProjectStatItem(
+                icon = Icons.Default.EditNote,
+                value = (project.dailyLogCount ?: 0).toString(),
+                label = "Logs"
+            )
+            if (showTimeTracking) {
                 ProjectStatItem(
-                    icon = Icons.Default.EditNote,
-                    value = (count.dailyLogs ?: 0).toString(),
-                    label = "Logs"
+                    icon = Icons.Default.Schedule,
+                    value = (project.rawCount?.timeEntries ?: 0).toString(),
+                    label = "Time"
                 )
-                if (showTimeTracking) {
-                    ProjectStatItem(
-                        icon = Icons.Default.Schedule,
-                        value = (count.timeEntries ?: 0).toString(),
-                        label = "Time"
-                    )
-                }
             }
         }
     }

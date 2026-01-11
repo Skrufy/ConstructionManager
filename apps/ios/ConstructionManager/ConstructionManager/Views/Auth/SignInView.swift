@@ -38,18 +38,15 @@ struct SignInView: View {
 
                     // Logo & Title
                     VStack(spacing: AppSpacing.md) {
-                        Image(systemName: "building.2.crop.circle.fill")
-                            .font(.system(size: 80))
-                            .foregroundColor(.white)
+                        Image("ExcavatorLogo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 120, height: 120)
+                            .cornerRadius(AppSpacing.radiusMedium)
 
-                        VStack(spacing: 2) {
-                            Text("Duggin")
-                                .font(.system(size: 32, weight: .bold))
-                                .foregroundColor(.white)
-                            Text("Construction")
-                                .font(.system(size: 22, weight: .semibold))
-                                .foregroundColor(.white.opacity(0.9))
-                        }
+                        Text("Duggin Construction Co")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.white)
 
                         Text("auth.signInTitle".localized)
                             .font(AppTypography.secondary)

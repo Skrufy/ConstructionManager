@@ -556,7 +556,7 @@ fun DashboardScreen(
             }
 
             // Admin & HR Section - only show if at least one module is visible
-            if (showWarnings || showClients || showLabels || showSearch || showCompanySettings) {
+            if (showWarnings || showClients || showLabels || showCompanySettings) {
                 item {
                     Spacer(modifier = Modifier.height(AppSpacing.xs))
                     CPSectionHeader(title = stringResource(R.string.dashboard_admin_hr))
@@ -594,17 +594,6 @@ fun DashboardScreen(
                                 onClick = onOpenLabels,
                                 iconBackgroundColor = ConstructionYellow.copy(alpha = 0.15f),
                                 iconColor = androidx.compose.ui.graphics.Color(0xFFB45309)
-                            )
-                        }
-
-                        if (showSearch) {
-                            CPNavigationCard(
-                                title = stringResource(R.string.common_search),
-                                subtitle = stringResource(R.string.card_search_desc),
-                                icon = Icons.Default.Search,
-                                onClick = onOpenSearch,
-                                iconBackgroundColor = ConstructionGreen.copy(alpha = 0.15f),
-                                iconColor = ConstructionGreen
                             )
                         }
 

@@ -2,11 +2,13 @@ package com.constructionpro.app.ui.screens
 
 import android.content.res.Configuration
 import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
@@ -127,25 +129,18 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(AppSpacing.xl))
 
             // Logo/Brand Section
-            Box(
+            Image(
+                painter = painterResource(id = R.drawable.logo_excavator),
+                contentDescription = "Company Logo",
                 modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(AppSpacing.sm))
-                    .background(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "CP",
-                    style = AppTypography.heading2,
-                    fontWeight = FontWeight.Bold,
-                    color = androidx.compose.ui.graphics.Color.White
-                )
-            }
+                    .size(120.dp)
+                    .clip(RoundedCornerShape(AppSpacing.md))
+            )
 
             Spacer(modifier = Modifier.height(AppSpacing.sm))
 
             Text(
-                text = "ConstructionPro",
+                text = "Duggin Construction Co",
                 style = AppTypography.heading3,
                 fontWeight = FontWeight.Bold,
                 color = androidx.compose.ui.graphics.Color.White,
