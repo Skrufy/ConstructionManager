@@ -131,7 +131,7 @@ export async function GET(
       }
     }
 
-    // Get counts for drawings and documents separately (only latest versions)
+    // Get counts for drawings (latest only) and documents (all, since they may not track versions)
     const [drawingCount, documentCount] = await Promise.all([
       prisma.file.count({
         where: {
@@ -144,7 +144,6 @@ export async function GET(
         where: {
           projectId: params.id,
           category: { not: 'DRAWINGS' },
-          isLatest: true,
         },
       }),
     ])
@@ -237,7 +236,7 @@ export async function PATCH(
       },
     })
 
-    // Get counts for drawings and documents separately (only latest versions)
+    // Get counts for drawings (latest only) and documents (all, since they may not track versions)
     const [drawingCount, documentCount] = await Promise.all([
       prisma.file.count({
         where: {
@@ -250,7 +249,6 @@ export async function PATCH(
         where: {
           projectId: params.id,
           category: { not: 'DRAWINGS' },
-          isLatest: true,
         },
       }),
     ])

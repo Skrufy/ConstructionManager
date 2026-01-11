@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
       take: pageSize,
     })
 
-    // Get drawing and document counts for each project (only latest versions)
+    // Get drawing counts (latest only) and document counts (all, since they may not track versions)
     const projectIds = projects.map(p => p.id)
     const [drawingCounts, documentCounts] = await Promise.all([
       prisma.file.groupBy({
@@ -193,7 +193,6 @@ export async function GET(request: NextRequest) {
         where: {
           projectId: { in: projectIds },
           category: { not: 'DRAWINGS' },
-          isLatest: true,
         },
         _count: { id: true },
       }),
