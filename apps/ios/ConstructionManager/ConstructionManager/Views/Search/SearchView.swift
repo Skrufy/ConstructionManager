@@ -16,24 +16,27 @@ struct SearchView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Search Bar
-                searchBar
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Search Bar
+                    searchBar
 
-                // Type Filters
-                typeFilters
+                    // Type Filters
+                    typeFilters
 
-                // Content
-                if searchText.isEmpty {
-                    recentSearchesView
-                } else if searchService.isSearching {
-                    loadingView
-                } else if searchService.results.isEmpty {
-                    emptyResultsView
-                } else {
-                    searchResultsList
+                    // Content
+                    if searchText.isEmpty {
+                        recentSearchesView
+                    } else if searchService.isSearching {
+                        loadingView
+                    } else if searchService.results.isEmpty {
+                        emptyResultsView
+                    } else {
+                        searchResultsList
+                    }
                 }
             }
+            .scrollDismissesKeyboard(.interactively)
             .background(AppColors.background)
             .navigationTitle("Search")
             .navigationBarTitleDisplayMode(.inline)
@@ -196,26 +199,24 @@ struct SearchView: View {
                     }
                 }
             }
-            Spacer()
         }
     }
 
     private var loadingView: some View {
         VStack {
-            Spacer()
             ProgressView()
                 .progressViewStyle(CircularProgressViewStyle(tint: AppColors.primary600))
             Text("Searching...")
                 .font(AppTypography.secondary)
                 .foregroundColor(AppColors.textSecondary)
                 .padding(.top, AppSpacing.sm)
-            Spacer()
         }
+        .frame(minHeight: 200)
+        .frame(maxWidth: .infinity)
     }
 
     private var emptyResultsView: some View {
         VStack(spacing: AppSpacing.md) {
-            Spacer()
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 48))
                 .foregroundColor(AppColors.gray300)
@@ -225,19 +226,18 @@ struct SearchView: View {
             Text("Try different keywords or filters")
                 .font(AppTypography.secondary)
                 .foregroundColor(AppColors.textSecondary)
-            Spacer()
         }
+        .frame(minHeight: 200)
+        .frame(maxWidth: .infinity)
     }
 
     private var searchResultsList: some View {
-        ScrollView {
-            LazyVStack(spacing: AppSpacing.sm) {
-                ForEach(searchService.results) { result in
-                    SearchResultCard(result: result)
-                }
+        LazyVStack(spacing: AppSpacing.sm) {
+            ForEach(searchService.results) { result in
+                SearchResultCard(result: result)
             }
-            .padding(AppSpacing.md)
         }
+        .padding(AppSpacing.md)
     }
 
     private func performSearch() async {
