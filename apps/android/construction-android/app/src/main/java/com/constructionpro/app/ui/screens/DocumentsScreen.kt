@@ -63,6 +63,7 @@ private data class DocumentsState(
 @Composable
 fun DocumentsScreen(
     apiService: ApiService,
+    projectId: String? = null,
     onBack: () -> Unit,
     onOpenDocument: (String) -> Unit
 ) {
@@ -103,6 +104,7 @@ fun DocumentsScreen(
 
                 val response = withContext(Dispatchers.IO) {
                     apiService.getDocuments(
+                        projectId = projectId,
                         search = query.takeIf { it.isNotBlank() },
                         blasterIds = blasterIdsParam,
                         page = targetPage,

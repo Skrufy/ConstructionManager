@@ -246,6 +246,16 @@ private fun AppNav(
         composable("documents") {
             DocumentsScreen(
                 apiService = apiService,
+                projectId = null,
+                onBack = { navController.popBackStack() },
+                onOpenDocument = { documentId -> navController.navigate("document/$documentId") }
+            )
+        }
+        composable("documents/{projectId}") { backStackEntry ->
+            val projectId = backStackEntry.arguments?.getString("projectId")
+            DocumentsScreen(
+                apiService = apiService,
+                projectId = projectId,
                 onBack = { navController.popBackStack() },
                 onOpenDocument = { documentId -> navController.navigate("document/$documentId") }
             )
@@ -324,7 +334,7 @@ private fun AppNav(
                     onBack = { navController.popBackStack() },
                     onViewDailyLogs = { navController.navigate("daily-logs/$projectId") },
                     onViewTimeEntries = { navController.navigate("time-tracking") },
-                    onViewFiles = { navController.navigate("documents") },
+                    onViewFiles = { navController.navigate("documents/$projectId") },
                     onEditProject = { navController.navigate("project-edit/$projectId") }
                 )
             }

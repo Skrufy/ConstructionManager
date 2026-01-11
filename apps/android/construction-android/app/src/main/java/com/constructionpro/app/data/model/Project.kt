@@ -71,12 +71,13 @@ data class ProjectDetail(
   @SerialName("hours_tracked") val hoursTracked: Int? = null
 ) {
   // Helper to provide backward-compatible count access
+  // files = documentCount only (not drawings) since the Files button opens documents page
   val count: ProjectCount?
     get() = ProjectCount(
       assignments = crewCount,
       dailyLogs = dailyLogCount,
       timeEntries = hoursTracked,
-      files = (documentCount ?: 0) + (drawingCount ?: 0)
+      files = documentCount ?: 0
     )
 }
 
