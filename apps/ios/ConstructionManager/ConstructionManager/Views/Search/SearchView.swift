@@ -74,6 +74,7 @@ struct SearchView: View {
                     Button(action: {
                         searchText = ""
                         searchService.clearResults()
+                        searchService.activeFilter = nil
                     }) {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(AppColors.gray400)
@@ -92,8 +93,8 @@ struct SearchView: View {
                 isSearchFocused = true
             }
 
-            // Filter indicator
-            if let filterLabel = searchService.activeFilterLabel {
+            // Filter indicator - only show when there's search text with a filter
+            if !searchText.isEmpty, let filterLabel = searchService.activeFilterLabel {
                 HStack(spacing: AppSpacing.xs) {
                     Text("Filtering:")
                         .font(AppTypography.secondary)
@@ -106,6 +107,15 @@ struct SearchView: View {
                         .background(AppColors.primary100)
                         .cornerRadius(4)
                     Spacer()
+                    // Clear filter button
+                    Button(action: {
+                        searchService.activeFilter = nil
+                        Task { await performSearch() }
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(AppColors.gray400)
+                    }
                 }
             }
 
