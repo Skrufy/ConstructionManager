@@ -26,11 +26,7 @@ function transformProject(project: {
   client?: { id: string; companyName: string; contactName: string | null } | null
   assignments?: Array<{ user: { id: string; name: string; email: string; role: string } }>
   _count?: { assignments: number; dailyLogs: number; timeEntries: number; files: number }
-}, drawingCount: number = 0) {
-  // Calculate document count (files minus drawings)
-  const totalFiles = project._count?.files ?? 0
-  const documentCount = Math.max(0, totalFiles - drawingCount)
-
+}, drawingCount: number = 0, documentCount: number = 0) {
   return {
     id: project.id,
     name: project.name,
@@ -180,20 +176,35 @@ export async function GET(request: NextRequest) {
       take: pageSize,
     })
 
-    // Get drawing counts for each project (files with category = 'DRAWINGS')
+    // Get drawing and document counts for each project (only latest versions)
     const projectIds = projects.map(p => p.id)
-    const drawingCounts = await prisma.file.groupBy({
-      by: ['projectId'],
-      where: {
-        projectId: { in: projectIds },
-        category: 'DRAWINGS',
-      },
-      _count: { id: true },
-    })
+    const [drawingCounts, documentCounts] = await Promise.all([
+      prisma.file.groupBy({
+        by: ['projectId'],
+        where: {
+          projectId: { in: projectIds },
+          category: 'DRAWINGS',
+          isLatest: true,
+        },
+        _count: { id: true },
+      }),
+      prisma.file.groupBy({
+        by: ['projectId'],
+        where: {
+          projectId: { in: projectIds },
+          category: { not: 'DRAWINGS' },
+          isLatest: true,
+        },
+        _count: { id: true },
+      }),
+    ])
 
-    // Create a map of projectId -> drawingCount
+    // Create maps of projectId -> count
     const drawingCountMap = new Map(
       drawingCounts.map(d => [d.projectId, d._count.id])
+    )
+    const documentCountMap = new Map(
+      documentCounts.map(d => [d.projectId, d._count.id])
     )
 
     // If includeAssignments is true (for admin permissions page), return raw data
@@ -233,7 +244,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      projects: projects.map(p => transformProject(p, drawingCountMap.get(p.id) ?? 0)),
+      projects: projects.map(p => transformProject(p, drawingCountMap.get(p.id) ?? 0, documentCountMap.get(p.id) ?? 0)),
       page,
       pageSize,
       total,

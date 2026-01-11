@@ -23,11 +23,7 @@ function transformProject(project: {
   client?: { id: string; companyName: string; contactName: string | null } | null
   assignments?: Array<{ user: { id: string; name: string; email: string; role: string } }>
   _count?: { assignments?: number; dailyLogs?: number; timeEntries?: number; files?: number }
-}, drawingCount: number = 0) {
-  // Calculate document count (files minus drawings)
-  const totalFiles = project._count?.files ?? 0
-  const documentCount = Math.max(0, totalFiles - drawingCount)
-
+}, drawingCount: number = 0, documentCount: number = 0) {
   return {
     id: project.id,
     name: project.name,
@@ -135,16 +131,25 @@ export async function GET(
       }
     }
 
-    // Get drawing count for this project
-    const drawingCount = await prisma.file.count({
-      where: {
-        projectId: params.id,
-        category: 'DRAWINGS',
-        isLatest: true,
-      },
-    })
+    // Get counts for drawings and documents separately (only latest versions)
+    const [drawingCount, documentCount] = await Promise.all([
+      prisma.file.count({
+        where: {
+          projectId: params.id,
+          category: 'DRAWINGS',
+          isLatest: true,
+        },
+      }),
+      prisma.file.count({
+        where: {
+          projectId: params.id,
+          category: { not: 'DRAWINGS' },
+          isLatest: true,
+        },
+      }),
+    ])
 
-    return NextResponse.json({ project: transformProject(project, drawingCount) })
+    return NextResponse.json({ project: transformProject(project, drawingCount, documentCount) })
   } catch (error) {
     console.error('Error fetching project:', error)
     return NextResponse.json({ error: 'Failed to fetch project' }, { status: 500 })
@@ -232,16 +237,25 @@ export async function PATCH(
       },
     })
 
-    // Get drawing count for this project
-    const drawingCount = await prisma.file.count({
-      where: {
-        projectId: params.id,
-        category: 'DRAWINGS',
-        isLatest: true,
-      },
-    })
+    // Get counts for drawings and documents separately (only latest versions)
+    const [drawingCount, documentCount] = await Promise.all([
+      prisma.file.count({
+        where: {
+          projectId: params.id,
+          category: 'DRAWINGS',
+          isLatest: true,
+        },
+      }),
+      prisma.file.count({
+        where: {
+          projectId: params.id,
+          category: { not: 'DRAWINGS' },
+          isLatest: true,
+        },
+      }),
+    ])
 
-    return NextResponse.json({ project: transformProject(project, drawingCount) })
+    return NextResponse.json({ project: transformProject(project, drawingCount, documentCount) })
   } catch (error) {
     console.error('Error updating project:', error)
     return NextResponse.json({ error: 'Failed to update project' }, { status: 500 })
