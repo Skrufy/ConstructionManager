@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Building2, Clock, FileText, Truck, Camera, Users } from 'lucide-react'
 
 export default function Home() {
@@ -8,9 +9,15 @@ export default function Home() {
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-8 w-8 text-primary-600" />
-              <span className="text-xl font-bold text-gray-900">ConstructionPro</span>
+            <div className="flex items-center gap-3">
+              <Image
+                src="/icon.png"
+                alt="Duggin Construction Co"
+                width={40}
+                height={40}
+                className="rounded-lg"
+              />
+              <span className="text-xl font-bold text-gray-900">Duggin Construction Co</span>
             </div>
             <div className="flex gap-4">
               <Link
@@ -101,12 +108,18 @@ export default function Home() {
       <footer className="bg-gray-900 text-gray-400 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-6 w-6 text-gray-400" />
-              <span className="text-lg font-semibold text-white">ConstructionPro</span>
+            <div className="flex items-center gap-3">
+              <Image
+                src="/icon.png"
+                alt="Duggin Construction Co"
+                width={32}
+                height={32}
+                className="rounded-lg"
+              />
+              <span className="text-lg font-semibold text-white">Duggin Construction Co</span>
             </div>
             <p className="text-sm">
-              &copy; 2024 ConstructionPro. All rights reserved.
+              &copy; {new Date().getFullYear()} Duggin Construction Co. All rights reserved.
             </p>
           </div>
         </div>
